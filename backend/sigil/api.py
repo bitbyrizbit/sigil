@@ -1,6 +1,7 @@
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
+from sigil.config import settings
 from sigil.db import get_db
 from sigil.models import (
     AgentModel, TaskModel, EventModel, AlertModel, ApprovalModel, AuditRecordModel
@@ -12,6 +13,18 @@ from sigil.scenarios import run_all_scenarios, SCENARIO_DEFINITIONS
 from sigil.evaluation import run_evaluation_benchmark
 
 router = APIRouter(prefix="/api")
+
+def verify_operator_key(
+    x_operator_key: str | None = Header(None, alias="X-Operator-Key"),
+    operator_key: str | None = Query(None)
+):
+    provided = x_operator_key or operator_key
+    if not provided or provided != settings.OPERATOR_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized: Operator key required for security modifications. Provide header 'X-Operator-Key' or query param 'operator_key'."
+        )
+    return provided
 
 @router.get("/health")
 def health():
@@ -92,7 +105,7 @@ def get_agent_details(agent_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Agent not found")
     return agent
 
-@router.post("/agents")
+@router.post("/agents", dependencies=[Depends(verify_operator_key)])
 def create_agent(payload: dict[str, Any], db: Session = Depends(get_db)):
     agent_id = payload.get("agent_id")
     if not agent_id:
@@ -207,7 +220,7 @@ def list_alerts(
         })
     return results
 
-@router.post("/alerts/{alert_id}/resolve")
+@router.post("/alerts/{alert_id}/resolve", dependencies=[Depends(verify_operator_key)])
 def resolve_alert_endpoint(
     alert_id: str,
     payload: dict[str, Any],
@@ -292,7 +305,7 @@ def get_policies(db: Session = Depends(get_db)):
         ]
     }
 
-@router.post("/policies/update")
+@router.post("/policies/update", dependencies=[Depends(verify_operator_key)])
 def update_policy(payload: dict[str, Any], db: Session = Depends(get_db)):
     import uuid
     from sigil.models import PolicyChangeModel, utc_now
@@ -385,7 +398,7 @@ def update_policy(payload: dict[str, Any], db: Session = Depends(get_db)):
     }
 
 # --- Screen 6: Enforcement Controls ---
-@router.post("/containment/status")
+@router.post("/containment/status", dependencies=[Depends(verify_operator_key)])
 def set_containment_status(payload: dict[str, Any], db: Session = Depends(get_db)):
     agent_id = payload.get("agent_id")
     action = payload.get("action")  # PAUSE, RESTRICT, ISOLATE, RESUME
@@ -421,7 +434,7 @@ def list_approvals(status: str | None = None, db: Session = Depends(get_db)):
         for app in approvals
     ]
 
-@router.post("/approvals/resolve")
+@router.post("/approvals/resolve", dependencies=[Depends(verify_operator_key)])
 def resolve_approval_endpoint(payload: dict[str, Any], db: Session = Depends(get_db)):
     approval_id = payload.get("approval_id")
     action = payload.get("action")  # "APPROVE" or "REJECT"
@@ -474,7 +487,7 @@ def gateway_execute(payload: dict[str, Any], db: Session = Depends(get_db)):
     return resp.to_dict()
 
 # --- One-Command Seed & Scenarios ---
-@router.post("/seed")
+@router.post("/seed", dependencies=[Depends(verify_operator_key)])
 def seed_endpoint(db: Session = Depends(get_db)):
     seed_registry(db)
     return {"status": "success", "message": "Registry and default tasks seeded"}

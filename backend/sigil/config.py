@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class Settings(BaseModel):
     PROJECT_NAME: str = "Sigil"
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./sigil.db")
+    OPERATOR_KEY: str = os.getenv("OPERATOR_KEY", "sigil-operator-key-2026")
     CORS_ORIGINS: list[str] = [
         origin.strip()
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,*").split(",")

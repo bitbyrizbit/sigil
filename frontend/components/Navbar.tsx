@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
-import { Shield, Users, Activity, AlertTriangle, GitFork, BookOpen, Lock, BarChart3, Play, RefreshCw, Send } from "lucide-react";
+import React, { useState } from "react";
+import { Shield, Users, Activity, AlertTriangle, GitFork, BookOpen, Lock, BarChart3, Play, RefreshCw, Send, Key } from "lucide-react";
+import { getClientOperatorKey, setClientOperatorKey } from "../lib/api";
 
 interface NavbarProps {
   activeTab: string;
@@ -20,6 +21,13 @@ export default function Navbar({
   onResetSeed,
   loading,
 }: NavbarProps) {
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [opKey, setOpKey] = useState(getClientOperatorKey());
+
+  const handleSaveKey = () => {
+    setClientOperatorKey(opKey);
+    setShowKeyModal(false);
+  };
   const navItems = [
     { id: "overview", label: "Overview", icon: Shield },
     { id: "agents", label: "1. Agent Inventory", icon: Users },
@@ -69,6 +77,14 @@ export default function Navbar({
               Run All Scenarios
             </button>
             <button
+              onClick={() => setShowKeyModal(true)}
+              className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-md bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition"
+              title="Operator Authentication Key"
+            >
+              <Key className="w-3.5 h-3.5 mr-1 text-amber-400" />
+              Operator Key
+            </button>
+            <button
               onClick={onResetSeed}
               disabled={loading}
               className="inline-flex items-center p-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"
@@ -101,6 +117,41 @@ export default function Navbar({
           })}
         </nav>
       </div>
+
+      {showKeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-sm w-full p-5 space-y-3 shadow-xl">
+            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+              <Key className="w-4 h-4 text-amber-400" />
+              Operator Security Authentication
+            </h3>
+            <p className="text-xs text-slate-400">
+              Control actions (Approve, Deny, Isolate, Policy Edit, Seed) require an operator key. Visitors without the key have read-only access.
+            </p>
+            <input
+              type="password"
+              value={opKey}
+              onChange={(e) => setOpKey(e.target.value)}
+              placeholder="Enter operator key..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+            />
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                onClick={() => setShowKeyModal(false)}
+                className="px-3 py-1.5 rounded bg-slate-800 text-xs text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveKey}
+                className="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-xs text-white font-bold"
+              >
+                Save Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

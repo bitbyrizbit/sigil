@@ -1,5 +1,22 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
+let currentOperatorKey = "sigil-operator-key-2026";
+
+export function setClientOperatorKey(key: string) {
+  currentOperatorKey = key;
+}
+
+export function getClientOperatorKey(): string {
+  return currentOperatorKey;
+}
+
+function getOperatorHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    "X-Operator-Key": currentOperatorKey,
+  };
+}
+
 export async function fetchSummary() {
   const res = await fetch(`${API_BASE}/api/dashboard/summary`, { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to fetch dashboard summary");
@@ -33,10 +50,10 @@ export async function fetchAlerts(status?: string, severity?: string) {
 export async function resolveAlert(alertId: string, status: string, notes?: string) {
   const res = await fetch(`${API_BASE}/api/alerts/${alertId}/resolve`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getOperatorHeaders(),
     body: JSON.stringify({ status, notes, resolved_by: "Security Operator" }),
   });
-  if (!res.ok) throw new Error("Failed to resolve alert");
+  if (!res.ok) throw new Error("Failed to resolve alert (operator authentication required)");
   return res.json();
 }
 
@@ -55,10 +72,10 @@ export async function fetchPolicies() {
 export async function updatePolicy(payload: any) {
   const res = await fetch(`${API_BASE}/api/policies/update`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getOperatorHeaders(),
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("Failed to update policy");
+  if (!res.ok) throw new Error("Failed to update policy (operator authentication required)");
   return res.json();
 }
 
@@ -71,20 +88,20 @@ export async function fetchApprovals() {
 export async function resolveApproval(approvalId: string, action: "APPROVE" | "REJECT", justification?: string) {
   const res = await fetch(`${API_BASE}/api/approvals/resolve`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getOperatorHeaders(),
     body: JSON.stringify({ approval_id: approvalId, action, justification, resolved_by: "Security Supervisor" }),
   });
-  if (!res.ok) throw new Error("Failed to resolve approval");
+  if (!res.ok) throw new Error("Failed to resolve approval (operator authentication required)");
   return res.json();
 }
 
 export async function updateContainment(agentId: string, action: string, reason?: string) {
   const res = await fetch(`${API_BASE}/api/containment/status`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getOperatorHeaders(),
     body: JSON.stringify({ agent_id: agentId, action, reason: reason || "Console containment update", operator: "Security Admin" }),
   });
-  if (!res.ok) throw new Error("Failed to update containment status");
+  if (!res.ok) throw new Error("Failed to update containment status (operator authentication required)");
   return res.json();
 }
 
@@ -113,8 +130,9 @@ export async function runScenarios() {
 export async function seedRegistry() {
   const res = await fetch(`${API_BASE}/api/seed`, {
     method: "POST",
+    headers: getOperatorHeaders(),
   });
-  if (!res.ok) throw new Error("Failed to seed registry");
+  if (!res.ok) throw new Error("Failed to seed registry (operator authentication required)");
   return res.json();
 }
 
