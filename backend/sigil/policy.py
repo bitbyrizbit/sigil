@@ -25,6 +25,36 @@ class PolicyEvaluationResult:
             "policy_status": self.policy_status
         }
 
+def match_resource_scope(target: str, scopes: list[str]) -> bool:
+    """
+    Evaluates whether target_resource falls within authorized scope entries.
+    Matches exact tokens, directory paths (prefix with '/' delimiter), or root path segments.
+    Prevents substring evasion flaws (e.g. 'unapproved_vendor_records' matching 'approved_vendor_records').
+    """
+    if not scopes or not target:
+        return False
+    norm_target = target.strip().lower()
+    target_segments = [s for s in norm_target.split("/") if s]
+    target_root = target_segments[0] if target_segments else norm_target
+
+    for scope in scopes:
+        norm_scope = scope.strip().lower()
+        if not norm_scope:
+            continue
+        # Exact match
+        if norm_target == norm_scope:
+            return True
+        # Exact directory path prefix with delimiter
+        if norm_target.startswith(norm_scope + "/"):
+            return True
+        # Target root segment matches scope token exactly
+        if target_root == norm_scope:
+            return True
+        # Scope is a sub-path within target with delimiter
+        if norm_scope.startswith(norm_target + "/"):
+            return True
+    return False
+
 def evaluate_hard_policies(
     agent: AgentModel,
     task: TaskModel | None,
@@ -73,26 +103,15 @@ def evaluate_hard_policies(
     if permitted_actions and operation_type not in permitted_actions:
         violated_rules.append(f"Operation '{operation_type}' is outside permitted actions: {permitted_actions}")
 
-    # 6. Data Scope & Resource Boundary
+    # 6. Data Scope & Resource Boundary (Exact segment & prefix matching)
     allowed_data_scope = agent.data_scope or []
-    resource_matched = False
-    # Check if target_resource is matched directly or substring
-    for scope in allowed_data_scope:
-        if scope.lower() in target_resource.lower() or target_resource.lower() in scope.lower():
-            resource_matched = True
-            break
-    if not resource_matched:
+    if not match_resource_scope(target_resource, allowed_data_scope):
         violated_rules.append(f"Resource '{target_resource}' is outside the authorized data scope for this agent")
 
     # 7. Task Context Scope Check (if task is bound)
     if task:
         task_scope = task.authorized_scope or []
-        task_matched = False
-        for s in task_scope:
-            if s.lower() in target_resource.lower() or target_resource.lower() in s.lower():
-                task_matched = True
-                break
-        if not task_matched:
+        if not match_resource_scope(target_resource, task_scope):
             violated_rules.append(f"Resource '{target_resource}' conflicts with active task '{task.title}' authorized scope {task_scope}")
 
         # Check destination if provided

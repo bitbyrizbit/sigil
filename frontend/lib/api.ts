@@ -1,19 +1,30 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
-let currentOperatorKey = "sigil-operator-key-2026";
+let currentOperatorKey = "";
 
 export function setClientOperatorKey(key: string) {
   currentOperatorKey = key;
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem("sigil_operator_key", key);
+    } catch {}
+  }
 }
 
 export function getClientOperatorKey(): string {
+  if (!currentOperatorKey && typeof window !== "undefined") {
+    try {
+      currentOperatorKey = sessionStorage.getItem("sigil_operator_key") || "";
+    } catch {}
+  }
   return currentOperatorKey;
 }
 
 function getOperatorHeaders(): Record<string, string> {
+  const key = getClientOperatorKey();
   return {
     "Content-Type": "application/json",
-    "X-Operator-Key": currentOperatorKey,
+    ...(key ? { "X-Operator-Key": key } : {}),
   };
 }
 
@@ -114,16 +125,24 @@ export async function fetchEvaluationMetrics() {
 export async function runEvaluation() {
   const res = await fetch(`${API_BASE}/api/evaluation/run`, {
     method: "POST",
+    headers: getOperatorHeaders(),
   });
-  if (!res.ok) throw new Error("Failed to run evaluation benchmark");
+  if (!res.ok) {
+    if (res.status === 401) throw new Error("Operator key required to run live evaluation benchmark. Click 'Operator Key' in top bar.");
+    throw new Error("Failed to run evaluation benchmark");
+  }
   return res.json();
 }
 
 export async function runScenarios() {
   const res = await fetch(`${API_BASE}/api/scenarios/run`, {
     method: "POST",
+    headers: getOperatorHeaders(),
   });
-  if (!res.ok) throw new Error("Failed to run scenarios");
+  if (!res.ok) {
+    if (res.status === 401) throw new Error("Operator key required to trigger test scenarios. Click 'Operator Key' in top bar.");
+    throw new Error("Failed to run scenarios");
+  }
   return res.json();
 }
 
@@ -132,17 +151,21 @@ export async function seedRegistry() {
     method: "POST",
     headers: getOperatorHeaders(),
   });
-  if (!res.ok) throw new Error("Failed to seed registry (operator authentication required)");
+  if (!res.ok) {
+    if (res.status === 401) throw new Error("Operator key required to re-seed database. Click 'Operator Key' in top bar.");
+    throw new Error("Failed to seed registry (operator authentication required)");
+  }
   return res.json();
 }
 
 export async function executeGateway(payload: any) {
   const res = await fetch(`${API_BASE}/api/gateway/execute`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getOperatorHeaders(),
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
+    if (res.status === 401) throw new Error("Operator key required to execute runtime gateway tool calls. Click 'Operator Key' in top bar.");
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || "Gateway execution failed");
   }

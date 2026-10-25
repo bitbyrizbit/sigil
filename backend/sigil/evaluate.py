@@ -17,11 +17,11 @@ def main():
             f"Attacks: {report['total_attacks']} | "
             f"Legitimate: {report['total_legitimate']} | "
             f"Ambiguous Cases: {report['total_ambiguous']} | "
-            f"Held-Out Generalization Set: {report['total_heldout']}\n"
+            f"Additional Edge Case Suite: {report.get('total_additional', 3)}\n"
         )
 
-        print(f"{'System / Architecture':<42} | {'Prec':<6} | {'Recall':<6} | {'FPR':<6} | {'Prev%':<6} | {'Legit%':<6} | {'Lat(ms)':<7}")
-        print("-" * 96)
+        print(f"{'System / Architecture':<42} | {'Prec':<6} | {'Recall':<6} | {'FPR':<6} | {'Prev%':<6} | {'Imm%':<6} | {'Held%':<6} | {'Lat(ms)':<7}")
+        print("-" * 105)
         for comp in report["comparisons"]:
             print(
                 f"{comp['system_name']:<42} | "
@@ -29,10 +29,11 @@ def main():
                 f"{comp['recall_pct']:<5.1f}% | "
                 f"{comp['false_positive_rate_pct']:<5.1f}% | "
                 f"{comp['prevention_rate_pct']:<5.1f}% | "
-                f"{comp['legitimate_task_completion_pct']:<5.1f}% | "
+                f"{comp.get('immediate_completion_pct', comp['legitimate_task_completion_pct']):<5.1f}% | "
+                f"{comp.get('held_for_review_pct', 0.0):<5.1f}% | "
                 f"{comp['avg_latency_ms']:<7.2f}"
             )
-        print("=" * 96)
+        print("=" * 105)
 
         print("\n" + "=" * 96)
         print("PER-SCENARIO-TYPE BREAKDOWN (Honest Empirical Performance by Threat Category)")

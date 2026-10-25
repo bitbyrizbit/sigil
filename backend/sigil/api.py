@@ -451,12 +451,12 @@ def resolve_approval_endpoint(payload: dict[str, Any], db: Session = Depends(get
 def get_evaluation_metrics(db: Session = Depends(get_db)):
     return run_evaluation_benchmark(db)
 
-@router.post("/evaluation/run")
+@router.post("/evaluation/run", dependencies=[Depends(verify_operator_key)])
 def trigger_evaluation_run(db: Session = Depends(get_db)):
     return run_evaluation_benchmark(db)
 
 # --- Tool Execution Gateway ---
-@router.post("/gateway/execute")
+@router.post("/gateway/execute", dependencies=[Depends(verify_operator_key)])
 def gateway_execute(payload: dict[str, Any], db: Session = Depends(get_db)):
     agent_id = payload.get("agent_id")
     tool_name = payload.get("tool_name")
@@ -492,7 +492,7 @@ def seed_endpoint(db: Session = Depends(get_db)):
     seed_registry(db)
     return {"status": "success", "message": "Registry and default tasks seeded"}
 
-@router.post("/scenarios/run")
+@router.post("/scenarios/run", dependencies=[Depends(verify_operator_key)])
 def run_scenarios_endpoint(db: Session = Depends(get_db)):
     results = run_all_scenarios(db)
     return {"status": "success", "results": results}

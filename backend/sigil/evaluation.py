@@ -75,15 +75,15 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
     agents_map = {a["agent_id"]: a for a in DEFAULT_AGENTS}
 
     systems = {
-        "Baseline A (Static RBAC)": {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "latencies": [], "prevented": 0, "legit_completed": 0, "details": []},
-        "Baseline B (RBAC + Volume Threshold)": {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "latencies": [], "prevented": 0, "legit_completed": 0, "details": []},
-        "Sigil (Context-Aware Identity Drift Layer)": {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "latencies": [], "prevented": 0, "legit_completed": 0, "details": []}
+        "Baseline A (Static RBAC)": {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "latencies": [], "prevented": 0, "legit_immediate": 0, "legit_held": 0, "details": []},
+        "Baseline B (RBAC + Volume Threshold)": {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "latencies": [], "prevented": 0, "legit_immediate": 0, "legit_held": 0, "details": []},
+        "Sigil (Context-Aware Identity Drift Layer)": {"tp": 0, "fp": 0, "tn": 0, "fn": 0, "latencies": [], "prevented": 0, "legit_immediate": 0, "legit_held": 0, "details": []}
     }
 
     total_violations = sum(1 for s in SCENARIO_DEFINITIONS if s["is_violation"])
     total_benign = sum(1 for s in SCENARIO_DEFINITIONS if not s["is_violation"])
     total_ambiguous = sum(1 for s in SCENARIO_DEFINITIONS if "ambiguous" in s["category"])
-    total_heldout = sum(1 for s in SCENARIO_DEFINITIONS if "heldout" in s["category"])
+    total_additional = sum(1 for s in SCENARIO_DEFINITIONS if "additional" in s["category"])
 
     category_stats = {}
 
@@ -116,7 +116,7 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
                 systems["Baseline A (Static RBAC)"]["fp"] += 1
             else:
                 systems["Baseline A (Static RBAC)"]["tn"] += 1
-                systems["Baseline A (Static RBAC)"]["legit_completed"] += 1
+                systems["Baseline A (Static RBAC)"]["legit_immediate"] += 1
                 category_stats[cat]["baseline_a_caught"] += 1
         systems["Baseline A (Static RBAC)"]["latencies"].append(res_a["latency_ms"])
         systems["Baseline A (Static RBAC)"]["details"].append({
@@ -142,7 +142,7 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
                 systems["Baseline B (RBAC + Volume Threshold)"]["fp"] += 1
             else:
                 systems["Baseline B (RBAC + Volume Threshold)"]["tn"] += 1
-                systems["Baseline B (RBAC + Volume Threshold)"]["legit_completed"] += 1
+                systems["Baseline B (RBAC + Volume Threshold)"]["legit_immediate"] += 1
                 category_stats[cat]["baseline_b_caught"] += 1
         systems["Baseline B (RBAC + Volume Threshold)"]["latencies"].append(res_b["latency_ms"])
         systems["Baseline B (RBAC + Volume Threshold)"]["details"].append({
@@ -185,7 +185,10 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
                 systems["Sigil (Context-Aware Identity Drift Layer)"]["fp"] += 1
             else:
                 systems["Sigil (Context-Aware Identity Drift Layer)"]["tn"] += 1
-                systems["Sigil (Context-Aware Identity Drift Layer)"]["legit_completed"] += 1
+                if gw_resp.decision == "ALLOW":
+                    systems["Sigil (Context-Aware Identity Drift Layer)"]["legit_immediate"] += 1
+                elif gw_resp.decision == "HOLD_FOR_APPROVAL":
+                    systems["Sigil (Context-Aware Identity Drift Layer)"]["legit_held"] += 1
                 category_stats[cat]["sigil_caught"] += 1
 
         systems["Sigil (Context-Aware Identity Drift Layer)"]["latencies"].append(sigil_lat)
@@ -209,7 +212,10 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
         recall = round((tp / (tp + fn)) * 100, 1) if (tp + fn) > 0 else 0.0
         fpr = round((fp / (fp + tn)) * 100, 1) if (fp + tn) > 0 else 0.0
         prev_rate = round((stats["prevented"] / total_violations) * 100, 1) if total_violations > 0 else 0.0
-        legit_rate = round((stats["legit_completed"] / total_benign) * 100, 1) if total_benign > 0 else 0.0
+        immediate_rate = round((stats["legit_immediate"] / total_benign) * 100, 1) if total_benign > 0 else 0.0
+        held_rate = round((stats["legit_held"] / total_benign) * 100, 1) if total_benign > 0 else 0.0
+        # Overall unblocked completion (immediate + held for safe verification without rejection)
+        legit_rate = round(((stats["legit_immediate"] + stats["legit_held"]) / total_benign) * 100, 1) if total_benign > 0 else 0.0
         avg_lat = round(sum(stats["latencies"]) / max(len(stats["latencies"]), 1), 2)
 
         summary.append({
@@ -219,6 +225,8 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
             "false_positive_rate_pct": fpr,
             "prevention_rate_pct": prev_rate,
             "legitimate_task_completion_pct": legit_rate,
+            "immediate_completion_pct": immediate_rate,
+            "held_for_review_pct": held_rate,
             "avg_latency_ms": avg_lat,
             "tp": tp,
             "fp": fp,
@@ -233,7 +241,7 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
         "total_attacks": total_violations,
         "total_legitimate": total_benign,
         "total_ambiguous": total_ambiguous,
-        "total_heldout": total_heldout,
+        "total_additional": total_additional,
         "comparisons": summary,
         "category_breakdown": list(category_stats.values())
     }
