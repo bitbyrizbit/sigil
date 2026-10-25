@@ -1,4 +1,6 @@
-# Sigil (सिजिल)
+# Sigil: Runtime Identity Drift Detection & Response for Autonomous AI Agents
+
+> A runtime security and governance proxy that intercepts autonomous AI agent tool calls outside the model's process space—continuously verifying that attempted actions remain strictly aligned with assigned role identity, active task intent, and authorized data boundaries before execution.
 
 ---
 

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Shield, Users, Activity, AlertTriangle, GitFork, BookOpen, Lock, BarChart3, Play, RefreshCw, Send, Key } from "lucide-react";
-import { getClientOperatorKey, setClientOperatorKey } from "../lib/api";
+import { Shield, Users, Activity, AlertTriangle, GitFork, BookOpen, Lock, BarChart3, Play, RefreshCw, Send, Key, Globe } from "lucide-react";
+import { getClientOperatorKey, setClientOperatorKey, getCustomBackendUrl, setCustomBackendUrl, getApiBase } from "../lib/api";
 
 interface NavbarProps {
   activeTab: string;
@@ -23,10 +23,20 @@ export default function Navbar({
 }: NavbarProps) {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [opKey, setOpKey] = useState(getClientOperatorKey());
+  const [backendUrl, setBackendUrl] = useState(() => {
+    const custom = getCustomBackendUrl();
+    if (custom) return custom;
+    const base = getApiBase();
+    return base && base !== "http://127.0.0.1:8000" ? base : "";
+  });
 
   const handleSaveKey = () => {
     setClientOperatorKey(opKey);
+    setCustomBackendUrl(backendUrl);
     setShowKeyModal(false);
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    }
   };
 
   const navItems = [
@@ -44,7 +54,7 @@ export default function Navbar({
     <div className="w-full pt-4 pb-2">
       {/* Top Header Area */}
       <div className="w-full pb-6 border-b border-ink/15">
-        {/* Sigil moved to the left (where lower cards begin), more slanted & tilted (-rotate-6), slow staggered sequential dots on hover */}
+        {/* Sigil moved to the left, slanted & tilted (-rotate-6), slow staggered sequential dots on hover */}
         <div className="w-full flex items-start justify-start pl-1 sm:pl-2 pt-2">
           <div
             className="group inline-flex items-baseline cursor-pointer select-none"
@@ -62,7 +72,7 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Identity drift line: stays centered, with increased gap and increased line-spacing */}
+        {/* Identity drift line: stays centered */}
         <div className="mt-8 sm:mt-10 text-center">
           <p className="text-xs sm:text-sm font-sans text-inkMuted tracking-wide leading-relaxed max-w-xl mx-auto">
             Identity drift detection and response layer for autonomous agents
@@ -134,30 +144,56 @@ export default function Navbar({
         })}
       </nav>
 
-      {/* Operator Key Modal */}
+      {/* Operator Key & Connection Modal */}
       {showKeyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs">
-          <div className="bg-paper border-1.5 border-ink rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-pink-lg" style={{ borderWidth: "1.5px" }}>
+          <div className="bg-paper border-1.5 border-ink rounded-3xl max-w-md w-full p-6 space-y-4 shadow-pink-lg" style={{ borderWidth: "1.5px" }}>
             <div className="flex items-center justify-between border-b border-ink/15 pb-2.5">
               <h3 className="text-sm font-serif font-bold text-ink flex items-center gap-2">
                 <Key className="w-4 h-4 text-pinkPrimary stroke-[2]" />
-                Operator authentication
+                Operator authentication &amp; connection
               </h3>
               <span className="text-[10px] font-sans border border-ink/30 px-2.5 py-0.5 rounded-full bg-canvas text-inkMuted font-medium">
                 Protected
               </span>
             </div>
+
             <p className="text-xs text-inkMuted leading-relaxed font-sans">
-              Mutations (approvals, pauses, isolations, policy updates, scenario benchmarks) require an operator secret. Observers browse in read-only mode.
+              Mutations (approvals, pauses, isolations, policy updates, scenario benchmarks) require an operator secret key.
             </p>
-            <input
-              type="password"
-              value={opKey}
-              onChange={(e) => setOpKey(e.target.value)}
-              placeholder="Paste operator secret key..."
-              className="w-full bg-canvas border border-ink/40 rounded-full px-4 py-2 text-xs text-ink focus:outline-none focus:border-pinkPrimary focus:bg-paper font-sans"
-            />
-            <div className="flex justify-end gap-2 pt-1 font-sans">
+
+            <div className="space-y-3 font-sans text-xs">
+              <div>
+                <label className="block text-[11px] font-semibold text-inkMuted mb-1 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-pinkPrimary" /> Operator secret key
+                </label>
+                <input
+                  type="password"
+                  value={opKey}
+                  onChange={(e) => setOpKey(e.target.value)}
+                  placeholder="Paste operator secret key..."
+                  className="w-full bg-canvas border border-ink/40 rounded-full px-4 py-2 text-xs text-ink focus:outline-none focus:border-pinkPrimary focus:bg-paper"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-inkMuted mb-1 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-pinkPrimary" /> Backend API URL (Render / Cloud)
+                </label>
+                <input
+                  type="text"
+                  value={backendUrl}
+                  onChange={(e) => setBackendUrl(e.target.value)}
+                  placeholder="e.g. https://sigil-backend.onrender.com"
+                  className="w-full bg-canvas border border-ink/40 rounded-full px-4 py-2 text-xs text-ink focus:outline-none focus:border-pinkPrimary focus:bg-paper"
+                />
+                <span className="text-[10px] text-inkMuted block mt-1 pl-1">
+                  Leave blank to use default backend or environment variable.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 font-sans">
               <button
                 onClick={() => setShowKeyModal(false)}
                 className="px-4 py-1.5 rounded-full bg-canvas border border-ink/30 text-xs font-medium text-ink hover:bg-paper transition-colors"
@@ -168,7 +204,7 @@ export default function Navbar({
                 onClick={handleSaveKey}
                 className="px-4 py-1.5 rounded-full bg-pinkPrimary text-white text-xs font-bold hover:bg-fuchsia shadow-sm transition-colors"
               >
-                Save key
+                Save &amp; connect
               </button>
             </div>
           </div>

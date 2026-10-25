@@ -36,7 +36,10 @@ export default function Home() {
   const [pageScrollProgress, setPageScrollProgress] = useState(0);
 
   // Live state
-  const [summaryData, setSummaryData] = useState({
+  const [summaryData, setSummaryData] = useState<{
+    summary: { registered_agents: number; open_alerts: number; blocked_actions: number; pending_reviews: number };
+    recent_events: any[];
+  }>({
     summary: { registered_agents: 0, open_alerts: 0, blocked_actions: 0, pending_reviews: 0 },
     recent_events: [],
   });
