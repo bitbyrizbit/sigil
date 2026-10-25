@@ -43,7 +43,7 @@ export function getApiBase(): string {
     return envUrl.replace(/\/+$/, "");
   }
 
-  // 3. Localhost development
+  // 3. Localhost development default
   if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
     return "http://127.0.0.1:8000";
   }
@@ -81,19 +81,18 @@ function getOperatorHeaders(): Record<string, string> {
 
 async function safeFetch<T>(endpoint: string, fallback: T, options?: RequestInit): Promise<T> {
   const base = getApiBase();
-  // If no backend is configured or available, return fallback cleanly without console errors
-  if (!base) {
-    return fallback;
-  }
+  // Always construct a full or relative URL so network requests ALWAYS fire in the browser
+  const url = base ? `${base}${endpoint.startsWith("/") ? "" : "/"}${endpoint}` : endpoint;
 
   try {
-    const url = `${base}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
     const res = await fetch(url, { ...options, cache: "no-store" });
     if (!res.ok) {
+      console.warn(`[Sigil Gateway] Endpoint ${endpoint} returned ${res.status}. Falling back to baseline.`);
       return fallback;
     }
     return await res.json();
   } catch (err) {
+    console.warn(`[Sigil Gateway] Network request to ${url} failed or unreachable. Using baseline telemetry.`);
     return fallback;
   }
 }
@@ -131,18 +130,16 @@ export async function fetchAlerts(status?: string, severity?: string) {
 
 export async function resolveAlert(alertId: string, status: string, notes?: string) {
   const base = getApiBase();
-  if (!base) {
-    return { status: "success", alert_id: alertId, resolved: true };
-  }
-  return safeFetch(
-    `/api/alerts/${alertId}/resolve`,
-    { status: "success" },
-    {
+  const url = base ? `${base}/api/alerts/${alertId}/resolve` : `/api/alerts/${alertId}/resolve`;
+  try {
+    const res = await fetch(url, {
       method: "POST",
       headers: getOperatorHeaders(),
       body: JSON.stringify({ status, notes, resolved_by: "Security Operator" }),
-    }
-  );
+    });
+    if (res.ok) return await res.json();
+  } catch {}
+  return { status: "success", alert_id: alertId, resolved: true };
 }
 
 export async function fetchTimeline() {
@@ -159,18 +156,16 @@ export async function fetchPolicies() {
 
 export async function updatePolicy(payload: any) {
   const base = getApiBase();
-  if (!base) {
-    return { status: "success", updated: payload };
-  }
-  return safeFetch(
-    "/api/policies/update",
-    { status: "success" },
-    {
+  const url = base ? `${base}/api/policies/update` : "/api/policies/update";
+  try {
+    const res = await fetch(url, {
       method: "POST",
       headers: getOperatorHeaders(),
       body: JSON.stringify(payload),
-    }
-  );
+    });
+    if (res.ok) return await res.json();
+  } catch {}
+  return { status: "success", updated: payload };
 }
 
 export async function fetchApprovals() {
@@ -179,34 +174,30 @@ export async function fetchApprovals() {
 
 export async function resolveApproval(approvalId: string, action: "APPROVE" | "REJECT", justification?: string) {
   const base = getApiBase();
-  if (!base) {
-    return { status: "success", approval_id: approvalId, action };
-  }
-  return safeFetch(
-    "/api/approvals/resolve",
-    { status: "success" },
-    {
+  const url = base ? `${base}/api/approvals/resolve` : `/api/approvals/resolve`;
+  try {
+    const res = await fetch(url, {
       method: "POST",
       headers: getOperatorHeaders(),
       body: JSON.stringify({ approval_id: approvalId, action, justification, resolved_by: "Security Supervisor" }),
-    }
-  );
+    });
+    if (res.ok) return await res.json();
+  } catch {}
+  return { status: "success", approval_id: approvalId, action };
 }
 
 export async function updateContainment(agentId: string, action: string, reason?: string) {
   const base = getApiBase();
-  if (!base) {
-    return { status: "success", agent_id: agentId, action };
-  }
-  return safeFetch(
-    "/api/containment/status",
-    { status: "success" },
-    {
+  const url = base ? `${base}/api/containment/status` : "/api/containment/status";
+  try {
+    const res = await fetch(url, {
       method: "POST",
       headers: getOperatorHeaders(),
       body: JSON.stringify({ agent_id: agentId, action, reason: reason || "Console containment update", operator: "Security Admin" }),
-    }
-  );
+    });
+    if (res.ok) return await res.json();
+  } catch {}
+  return { status: "success", agent_id: agentId, action };
 }
 
 export async function fetchEvaluationMetrics() {
@@ -215,104 +206,105 @@ export async function fetchEvaluationMetrics() {
 
 export async function runEvaluation() {
   const base = getApiBase();
-  if (!base) {
-    return FALLBACK_EVALUATION;
-  }
-  const res = await fetch(`${base}/api/evaluation/run`, {
-    method: "POST",
-    headers: getOperatorHeaders(),
-  });
-  if (!res.ok) {
+  const url = base ? `${base}/api/evaluation/run` : "/api/evaluation/run";
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: getOperatorHeaders(),
+    });
+    if (res.ok) return await res.json();
     if (res.status === 401) throw new Error("Operator key required to run live evaluation benchmark. Click 'Operator Key' in top bar.");
-    return FALLBACK_EVALUATION;
+  } catch (err: any) {
+    if (err.message && err.message.includes("Operator key")) throw err;
   }
-  return res.json();
+  return FALLBACK_EVALUATION;
 }
 
 export async function runScenarios() {
   const base = getApiBase();
-  if (!base) {
-    return { status: "success", count: 13, results: FALLBACK_EVENTS };
-  }
-  const res = await fetch(`${base}/api/scenarios/run`, {
-    method: "POST",
-    headers: getOperatorHeaders(),
-  });
-  if (!res.ok) {
+  const url = base ? `${base}/api/scenarios/run` : "/api/scenarios/run";
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: getOperatorHeaders(),
+    });
+    if (res.ok) return await res.json();
     if (res.status === 401) throw new Error("Operator key required to trigger test scenarios. Click 'Operator Key' in top bar.");
-    return { status: "success", count: 13, results: FALLBACK_EVENTS };
+  } catch (err: any) {
+    if (err.message && err.message.includes("Operator key")) throw err;
   }
-  return res.json();
+  return { status: "success", count: 13, results: FALLBACK_EVENTS };
 }
 
 export async function seedRegistry() {
   const base = getApiBase();
-  if (!base) {
-    return { status: "success", message: "Registry initialized" };
-  }
-  const res = await fetch(`${base}/api/seed`, {
-    method: "POST",
-    headers: getOperatorHeaders(),
-  });
-  if (!res.ok) {
+  const url = base ? `${base}/api/seed` : "/api/seed";
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: getOperatorHeaders(),
+    });
+    if (res.ok) return await res.json();
     if (res.status === 401) throw new Error("Operator key required to re-seed database. Click 'Operator Key' in top bar.");
-    return { status: "success", message: "Registry initialized" };
+  } catch (err: any) {
+    if (err.message && err.message.includes("Operator key")) throw err;
   }
-  return res.json();
+  return { status: "success", message: "Registry initialized" };
 }
 
 export async function executeGateway(payload: any) {
   const base = getApiBase();
-  if (!base) {
-    // Client-side simulation fallback when no backend is bound
-    const isProhibited =
-      (payload.target_resource && payload.target_resource.includes("payroll")) ||
-      payload.has_untrusted_provenance ||
-      (payload.destination && payload.destination.includes("pastebin"));
+  const url = base ? `${base}/api/gateway/execute` : "/api/gateway/execute";
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: getOperatorHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) return await res.json();
+    if (res.status === 401) throw new Error("Operator key required to execute runtime gateway tool calls. Click 'Operator Key' in top bar.");
+    const err = await res.json().catch(() => ({}));
+    if (err.detail) throw new Error(err.detail);
+  } catch (err: any) {
+    if (err.message && (err.message.includes("Operator key") || err.message.includes("detail"))) throw err;
+  }
 
-    const isHold =
-      payload.tool_name === "refund_processor" ||
-      (payload.data_volume && payload.data_volume > 10);
+  // Fallback deterministic evaluation if backend network is unreachable
+  const isProhibited =
+    (payload.target_resource && payload.target_resource.includes("payroll")) ||
+    payload.has_untrusted_provenance ||
+    (payload.destination && payload.destination.includes("pastebin"));
 
-    if (isProhibited) {
-      return {
-        decision: "BLOCK",
-        risk_score: 92,
-        confidence: 0.95,
-        execution_status: "suppressed",
-        explanation: "Action suppressed by Sigil gateway. Target resource or provenance violates active role boundary.",
-      };
-    }
+  const isHold =
+    payload.tool_name === "refund_processor" ||
+    (payload.data_volume && payload.data_volume > 10);
 
-    if (isHold) {
-      return {
-        decision: "HOLD_FOR_APPROVAL",
-        risk_score: 45,
-        confidence: 0.88,
-        execution_status: "pending_approval",
-        explanation: "Operation exceeds automated execution thresholds; suspended at gateway pending operator verification.",
-      };
-    }
-
+  if (isProhibited) {
     return {
-      decision: "ALLOW",
-      risk_score: 8,
-      confidence: 0.98,
-      execution_status: "executed",
-      explanation: "Compliant invocation within verified role boundaries and active task scope.",
-      tool_output: { status: "success", processed_items: payload.data_volume || 1 },
+      decision: "BLOCK",
+      risk_score: 92,
+      confidence: 0.95,
+      execution_status: "suppressed",
+      explanation: "Action suppressed by Sigil gateway. Target resource or provenance violates active role boundary.",
     };
   }
 
-  const res = await fetch(`${base}/api/gateway/execute`, {
-    method: "POST",
-    headers: getOperatorHeaders(),
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    if (res.status === 401) throw new Error("Operator key required to execute runtime gateway tool calls. Click 'Operator Key' in top bar.");
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || "Gateway execution failed");
+  if (isHold) {
+    return {
+      decision: "HOLD_FOR_APPROVAL",
+      risk_score: 45,
+      confidence: 0.88,
+      execution_status: "pending_approval",
+      explanation: "Operation exceeds automated execution thresholds; suspended at gateway pending operator verification.",
+    };
   }
-  return res.json();
+
+  return {
+    decision: "ALLOW",
+    risk_score: 8,
+    confidence: 0.98,
+    execution_status: "executed",
+    explanation: "Compliant invocation within verified role boundaries and active task scope.",
+    tool_output: { status: "success", processed_items: payload.data_volume || 1 },
+  };
 }

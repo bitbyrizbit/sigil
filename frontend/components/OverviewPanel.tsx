@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
-import { Users, AlertTriangle, ShieldAlert, Clock, ArrowUpRight, PlayCircle, ChevronsUpDown } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Users, AlertTriangle, ShieldAlert, Clock, ArrowUpRight, PlayCircle } from "lucide-react";
 import { DecisionStamp } from "./Stamp";
 
 interface OverviewProps {
@@ -23,60 +23,7 @@ export default function OverviewPanel({
   setActiveTab,
   onRunScenarios,
 }: OverviewProps) {
-  const tableRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [scrollRatio, setScrollRatio] = useState(0);
-
-  const handleTableScroll = () => {
-    if (!tableRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = tableRef.current;
-    const maxScroll = scrollWidth - clientWidth;
-    setScrollRatio(maxScroll > 0 ? scrollLeft / maxScroll : 0);
-  };
-
-  // Prevent page scroll when vertically scrolling inside the table box
-  useEffect(() => {
-    const tableEl = tableRef.current;
-    if (!tableEl) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      if (e.deltaY !== 0) {
-        e.preventDefault(); // Prevents vertical page scroll completely!
-        e.stopPropagation();
-        tableEl.scrollLeft += e.deltaY * 0.95;
-      }
-    };
-
-    tableEl.addEventListener("wheel", handleWheel, { passive: false });
-    return () => tableEl.removeEventListener("wheel", handleWheel);
-  }, []);
-
-  // Also prevent page scroll when wheeling over the vertical controller track
-  useEffect(() => {
-    const trackEl = trackRef.current;
-    const tableEl = tableRef.current;
-    if (!trackEl || !tableEl) return;
-
-    const handleTrackWheel = (e: WheelEvent) => {
-      if (e.deltaY !== 0) {
-        e.preventDefault();
-        e.stopPropagation();
-        tableEl.scrollLeft += e.deltaY * 0.95;
-      }
-    };
-
-    trackEl.addEventListener("wheel", handleTrackWheel, { passive: false });
-    return () => trackEl.removeEventListener("wheel", handleTrackWheel);
-  }, []);
-
-  const handleVerticalTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!tableRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickY = e.clientY - rect.top;
-    const ratio = Math.max(0, Math.min(1, clickY / rect.height));
-    const maxScroll = tableRef.current.scrollWidth - tableRef.current.clientWidth;
-    tableRef.current.scrollLeft = ratio * maxScroll;
-  };
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="space-y-6">
@@ -217,13 +164,13 @@ export default function OverviewPanel({
         </div>
       </div>
 
-      {/* Recent Telemetry Interceptions Card with Vertical-to-Horizontal Scroll Logic */}
+      {/* Recent Telemetry Interceptions Card with Dedicated Vertical Box Scrolling */}
       <div className="bg-paper border-1.5 border-ink/80 rounded-3xl shadow-ink p-6" style={{ borderWidth: "1.5px" }}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-ink/15 pb-3 mb-4">
           <div>
             <h2 className="text-base font-serif font-bold text-ink">Recent tool interceptions</h2>
             <p className="text-xs text-inkMuted font-sans">
-              Real-time activity observed and mediated by the Sigil proxy (scroll inside to slide columns; page will not scroll)
+              Real-time activity observed and mediated by the Sigil proxy (scroll inside to view records; mouse outside scrolls page)
             </p>
           </div>
           <button
@@ -239,91 +186,64 @@ export default function OverviewPanel({
             No events recorded yet. Click &quot;Run 13 test scenarios&quot; or launch the &quot;Gateway simulator&quot; to inspect runtime enforcement.
           </div>
         ) : (
-          <div className="flex items-stretch gap-3">
-            {/* Horizontal Table Container (native horizontal scrollbar hidden; mouse wheel scrolls it horizontally without scrolling the page) */}
-            <div
-              ref={tableRef}
-              onScroll={handleTableScroll}
-              className="flex-1 overflow-x-auto scrollbar-none select-text"
-            >
-              <table className="w-full text-left text-xs border-collapse font-sans min-w-[850px]">
-                <thead className="text-[11px] font-sans font-bold text-inkMuted border-b border-ink/15 bg-canvas/40">
-                  <tr>
-                    <th className="py-2.5 px-3">Time</th>
-                    <th className="py-2.5 px-3">Agent</th>
-                    <th className="py-2.5 px-3">Tool &amp; operation</th>
-                    <th className="py-2.5 px-3">Target resource</th>
-                    <th className="py-2.5 px-3">Risk score</th>
-                    <th className="py-2.5 px-3">Decision</th>
-                    <th className="py-2.5 px-3">Execution outcome</th>
+          /* Table Container with Contained Vertical Scroll: Inside scrolls this box only, outside scrolls page */
+          <div
+            ref={tableContainerRef}
+            className="max-h-[380px] overflow-y-auto overflow-x-auto rounded-2xl border border-ink/15 shadow-inner"
+            style={{ overscrollBehavior: "contain" }}
+          >
+            <table className="w-full text-left text-xs border-collapse font-sans min-w-[850px]">
+              <thead className="text-[11px] font-sans font-bold text-inkMuted border-b border-ink/15 bg-canvas/90 sticky top-0 backdrop-blur-sm z-10">
+                <tr>
+                  <th className="py-2.5 px-3">Time</th>
+                  <th className="py-2.5 px-3">Agent</th>
+                  <th className="py-2.5 px-3">Tool &amp; operation</th>
+                  <th className="py-2.5 px-3">Target resource</th>
+                  <th className="py-2.5 px-3">Risk score</th>
+                  <th className="py-2.5 px-3">Decision</th>
+                  <th className="py-2.5 px-3">Execution outcome</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink/10 text-ink">
+                {recentEvents.map((evt) => (
+                  <tr key={evt.event_id} className="hover:bg-canvas/30 transition-colors">
+                    <td className="py-3 px-3 text-inkMuted font-num text-[11px] tabular-nums whitespace-nowrap">
+                      {evt.timestamp ? new Date(evt.timestamp).toLocaleTimeString() : "--:--:--"}
+                    </td>
+                    <td className="py-3 px-3 whitespace-nowrap font-sans">
+                      <span className="font-semibold text-ink block">{evt.agent_name}</span>
+                      <span className="text-[11px] text-inkMuted block">{evt.role}</span>
+                    </td>
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <span className="font-sans text-[11px] font-semibold bg-canvas px-2.5 py-0.5 rounded-full border border-ink/20">
+                        {evt.tool_name}
+                      </span>
+                      <span className="text-inkMuted text-[11px] ml-1.5 font-sans">({evt.operation_type})</span>
+                    </td>
+                    <td className="py-3 px-3 text-ink max-w-xs truncate font-sans text-[11px]" title={evt.target_resource}>
+                      {evt.target_resource}
+                    </td>
+                    <td className="py-3 px-3 whitespace-nowrap font-num font-bold tabular-nums">
+                      <span className={evt.risk_score >= 70 ? "text-fuchsia font-bold" : "text-ink"}>
+                        {evt.risk_score} / 100
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <DecisionStamp decision={evt.decision} size="sm" />
+                    </td>
+                    <td className="py-3 px-3 whitespace-nowrap text-xs font-sans">
+                      {evt.result === "allowed" || evt.result === "succeeded" ? (
+                        <span className="text-allow font-semibold">Tool executed</span>
+                      ) : evt.result === "pending_approval" ? (
+                        <span className="text-ink font-medium bg-hold/30 px-2 py-0.5 rounded-full border border-ink/30">Awaiting operator signoff</span>
+                      ) : (
+                        <span className="text-fuchsia font-semibold">Pre-execution suppressed</span>
+                      )}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-ink/10 text-ink">
-                  {recentEvents.map((evt) => (
-                    <tr key={evt.event_id} className="hover:bg-canvas/30 transition-colors">
-                      <td className="py-3 px-3 text-inkMuted font-num text-[11px] tabular-nums whitespace-nowrap">
-                        {evt.timestamp ? new Date(evt.timestamp).toLocaleTimeString() : "--:--:--"}
-                      </td>
-                      <td className="py-3 px-3 whitespace-nowrap font-sans">
-                        <span className="font-semibold text-ink block">{evt.agent_name}</span>
-                        <span className="text-[11px] text-inkMuted block">{evt.role}</span>
-                      </td>
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        <span className="font-sans text-[11px] font-semibold bg-canvas px-2.5 py-0.5 rounded-full border border-ink/20">
-                          {evt.tool_name}
-                        </span>
-                        <span className="text-inkMuted text-[11px] ml-1.5 font-sans">({evt.operation_type})</span>
-                      </td>
-                      <td className="py-3 px-3 text-ink max-w-xs truncate font-sans text-[11px]" title={evt.target_resource}>
-                        {evt.target_resource}
-                      </td>
-                      <td className="py-3 px-3 whitespace-nowrap font-num font-bold tabular-nums">
-                        <span className={evt.risk_score >= 70 ? "text-fuchsia font-bold" : "text-ink"}>
-                          {evt.risk_score} / 100
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        <DecisionStamp decision={evt.decision} size="sm" />
-                      </td>
-                      <td className="py-3 px-3 whitespace-nowrap text-xs font-sans">
-                        {evt.result === "allowed" || evt.result === "succeeded" ? (
-                          <span className="text-allow font-semibold">Tool executed</span>
-                        ) : evt.result === "pending_approval" ? (
-                          <span className="text-ink font-medium bg-hold/30 px-2 py-0.5 rounded-full border border-ink/30">Awaiting operator signoff</span>
-                        ) : (
-                          <span className="text-fuchsia font-semibold">Pre-execution suppressed</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Dedicated Vertical Scroll Controller Track Outside the Box */}
-            <div ref={trackRef} className="flex flex-col items-center justify-between py-1 px-0.5 shrink-0 select-none">
-              <div className="text-[9px] font-sans font-bold text-pinkPrimary tracking-wider uppercase writing-vertical flex items-center gap-1 mb-1">
-                <ChevronsUpDown className="w-3 h-3 text-pinkPrimary" />
-              </div>
-
-              <div
-                onClick={handleVerticalTrackClick}
-                className="w-2.5 flex-1 bg-canvas border border-ink/20 rounded-full relative cursor-pointer hover:bg-canvasSubtle transition-colors shadow-inner"
-                title="Scroll vertically or click to slide table horizontally"
-              >
-                <div
-                  className="w-full bg-pinkPrimary rounded-full absolute transition-all duration-75 shadow-sm"
-                  style={{
-                    height: "28%",
-                    top: `${Math.min(72, scrollRatio * 72)}%`,
-                  }}
-                />
-              </div>
-
-              <span className="text-[9px] text-inkMuted font-sans font-semibold mt-1">
-                {Math.round(scrollRatio * 100)}%
-              </span>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

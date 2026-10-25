@@ -19,6 +19,7 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
   const [dataVolume, setDataVolume] = useState(1);
   const [destination, setDestination] = useState("internal_notes_system");
   const [hasUntrustedProvenance, setHasUntrustedProvenance] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<string>("normal_research");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,7 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
   if (!isOpen) return null;
 
   const handlePreset = (preset: string) => {
+    setSelectedPreset(preset);
     setError(null);
     setResult(null);
     if (preset === "normal_research") {
@@ -135,30 +137,46 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
             <button
               type="button"
               onClick={() => handlePreset("normal_research")}
-              className="px-3.5 py-1 rounded-full border border-ink/20 bg-canvas text-ink hover:bg-allow hover:text-white hover:border-ink transition-all text-xs font-medium"
+              className={`px-3.5 py-1.5 rounded-full border text-xs transition-all ${
+                selectedPreset === "normal_research"
+                  ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
+                  : "bg-canvas text-ink border-ink/20 hover:border-ink/50 font-medium"
+              }`}
             >
               Compliant read (Allow)
             </button>
             <button
               type="button"
               onClick={() => handlePreset("scenario_a_payroll")}
-              className="px-3.5 py-1 rounded-full border border-pinkPrimary/40 bg-canvas text-pinkPrimary hover:bg-pinkPrimary hover:text-white transition-all text-xs font-semibold"
+              className={`px-3.5 py-1.5 rounded-full border text-xs transition-all ${
+                selectedPreset === "scenario_a_payroll"
+                  ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
+                  : "bg-canvas text-ink border-ink/20 hover:border-ink/50 font-medium"
+              }`}
             >
               Payroll access (Block)
             </button>
             <button
               type="button"
               onClick={() => handlePreset("scenario_b_injection")}
-              className="px-3.5 py-1 rounded-full border border-fuchsia/40 bg-canvas text-fuchsia hover:bg-fuchsia hover:text-white transition-all text-xs font-semibold"
+              className={`px-3.5 py-1.5 rounded-full border text-xs transition-all ${
+                selectedPreset === "scenario_b_injection"
+                  ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
+                  : "bg-canvas text-ink border-ink/20 hover:border-ink/50 font-medium"
+              }`}
             >
               Prompt injection exfil (Block)
             </button>
             <button
               type="button"
               onClick={() => handlePreset("scenario_hold_refund")}
-              className="px-3.5 py-1 rounded-full border border-ink/20 bg-canvas text-ink hover:bg-hold hover:border-ink transition-all text-xs font-medium"
+              className={`px-3.5 py-1.5 rounded-full border text-xs transition-all ${
+                selectedPreset === "scenario_hold_refund"
+                  ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
+                  : "bg-canvas text-ink border-ink/20 hover:border-ink/50 font-medium"
+              }`}
             >
-              \$220 refund (Hold for review)
+              $220 refund (Hold for review)
             </button>
           </div>
         </div>
