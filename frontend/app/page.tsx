@@ -27,6 +27,7 @@ import {
   resolveAlert,
   resolveApproval,
   updatePolicy,
+  getApiBase,
 } from "../lib/api";
 
 export default function Home() {
@@ -95,6 +96,7 @@ export default function Home() {
 
   useEffect(() => {
     loadAllData();
+    if (!getApiBase()) return;
     const interval = setInterval(loadAllData, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -102,8 +104,13 @@ export default function Home() {
   const handleRunScenarios = async () => {
     setLoading(true);
     try {
-      await runScenarios();
-      await loadAllData();
+      const res = await runScenarios();
+      if (res && res.results && res.results.length > 0) {
+        setEvents(res.results);
+      }
+      if (getApiBase()) {
+        await loadAllData();
+      }
       setActiveTab("activity");
     } catch (err) {
       console.error("Scenario execution error:", err);
@@ -117,7 +124,9 @@ export default function Home() {
     try {
       const res = await runEvaluation();
       setEvaluationData(res);
-      await loadAllData();
+      if (getApiBase()) {
+        await loadAllData();
+      }
     } catch (err) {
       console.error("Benchmark execution error:", err);
     } finally {
@@ -139,8 +148,14 @@ export default function Home() {
 
   const handleUpdateContainment = async (agentId: string, action: string, reason?: string) => {
     try {
+      // Optimistically update agent state immediately
+      setAgents((prev) =>
+        prev.map((a) => (a.agent_id === agentId ? { ...a, containment_status: action } : a))
+      );
       await updateContainment(agentId, action, reason);
-      await loadAllData();
+      if (getApiBase()) {
+        await loadAllData();
+      }
     } catch (err) {
       console.error("Containment error:", err);
     }
@@ -148,8 +163,13 @@ export default function Home() {
 
   const handleResolveAlert = async (alertId: string, status: string) => {
     try {
+      setAlerts((prev) =>
+        prev.map((a) => (a.alert_id === alertId ? { ...a, status } : a))
+      );
       await resolveAlert(alertId, status);
-      await loadAllData();
+      if (getApiBase()) {
+        await loadAllData();
+      }
     } catch (err) {
       console.error("Alert resolution error:", err);
     }
@@ -157,8 +177,13 @@ export default function Home() {
 
   const handleResolveApproval = async (approvalId: string, action: "APPROVE" | "REJECT", justification?: string) => {
     try {
+      setApprovals((prev) =>
+        prev.map((a) => (a.approval_id === approvalId ? { ...a, status: action === "APPROVE" ? "APPROVED" : "REJECTED" } : a))
+      );
       await resolveApproval(approvalId, action, justification);
-      await loadAllData();
+      if (getApiBase()) {
+        await loadAllData();
+      }
     } catch (err) {
       console.error("Approval resolution error:", err);
     }
