@@ -8,7 +8,9 @@ def resolve_approval(
     approval_id: str,
     action: str,  # "APPROVE" or "REJECT"
     resolved_by: str,
-    justification: str | None = None
+    justification: str | None = None,
+    verify_target: str | None = None,
+    verify_tool: str | None = None
 ) -> dict:
     approval = db.query(ApprovalModel).filter(ApprovalModel.approval_id == approval_id).first()
     if not approval:
@@ -16,6 +18,25 @@ def resolve_approval(
 
     if approval.status != "PENDING":
         return {"status": "error", "message": f"Approval request {approval_id} is already {approval.status}"}
+
+    # Hard Security Rule: An agent CANNOT approve its own held action or any held action
+    if resolved_by == approval.agent_id or resolved_by.lower().startswith("agent_"):
+        return {
+            "status": "error",
+            "message": f"Security violation: Agent '{resolved_by}' cannot approve held operations. Independent human operator verification required."
+        }
+
+    # Hard Binding Check: Verify exact target and tool match
+    if verify_target and verify_target != approval.target_resource:
+        return {
+            "status": "error",
+            "message": f"Security binding mismatch: Approval target '{approval.target_resource}' does not match requested execution target '{verify_target}'"
+        }
+    if verify_tool and verify_tool != approval.requested_tool:
+        return {
+            "status": "error",
+            "message": f"Security binding mismatch: Approval tool '{approval.requested_tool}' does not match requested execution tool '{verify_tool}'"
+        }
 
     approval.resolved_at = utc_now()
     approval.resolved_by = resolved_by
@@ -29,12 +50,14 @@ def resolve_approval(
         if event:
             event.result = "allowed"
             event.authorization_decision = "APPROVED_BY_ADMIN"
-            # Execute held tool
+            # Execute held tool with original bounded parameters
+            exec_params = dict(approval.action_parameters or {})
+            exec_params["approved_by"] = resolved_by
             tool_output = execute_simulated_tool(
                 tool_name=approval.requested_tool,
-                operation_type="approved_execution",
+                operation_type=approval.operation_type or "approved_execution",
                 target_resource=approval.target_resource,
-                parameters={"approved_by": resolved_by}
+                parameters=exec_params
             )
         
         # Update audit record

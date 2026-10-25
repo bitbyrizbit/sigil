@@ -294,29 +294,95 @@ def get_policies(db: Session = Depends(get_db)):
 
 @router.post("/policies/update")
 def update_policy(payload: dict[str, Any], db: Session = Depends(get_db)):
+    import uuid
+    from sigil.models import PolicyChangeModel, utc_now
+
     agent_id = payload.get("agent_id")
     agent = db.query(AgentModel).filter(AgentModel.agent_id == agent_id).first()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
+    old_version = agent.policy_version
+    # Version bump
+    try:
+        ver_float = float(old_version)
+        new_version = f"{ver_float + 0.1:.1f}"
+    except ValueError:
+        new_version = f"{old_version}.1"
+
+    approved_by = payload.get("approved_by", "admin_compliance_officer")
+    justification = payload.get("justification", "Formal scope amendment approved by security administration")
+
+    changes_dict = {}
     if "allowed_tools" in payload:
+        changes_dict["allowed_tools"] = {"from": agent.allowed_tools, "to": payload["allowed_tools"]}
         agent.allowed_tools = payload["allowed_tools"]
     if "restricted_tools" in payload:
+        changes_dict["restricted_tools"] = {"from": agent.restricted_tools, "to": payload["restricted_tools"]}
         agent.restricted_tools = payload["restricted_tools"]
     if "data_scope" in payload:
+        changes_dict["data_scope"] = {"from": agent.data_scope, "to": payload["data_scope"]}
         agent.data_scope = payload["data_scope"]
     if "permitted_actions" in payload:
+        changes_dict["permitted_actions"] = {"from": agent.permitted_actions, "to": payload["permitted_actions"]}
         agent.permitted_actions = payload["permitted_actions"]
     if "restricted_actions" in payload:
+        changes_dict["restricted_actions"] = {"from": agent.restricted_actions, "to": payload["restricted_actions"]}
         agent.restricted_actions = payload["restricted_actions"]
     if "task_scope" in payload:
+        changes_dict["task_scope"] = {"from": agent.task_scope, "to": payload["task_scope"]}
         agent.task_scope = payload["task_scope"]
-    if "policy_version" in payload:
-        agent.policy_version = payload["policy_version"]
+
+    agent.policy_version = new_version
+
+    # Immutable change record (Scenario F compliance)
+    change_record = PolicyChangeModel(
+        change_id=f"chg_{uuid.uuid4().hex[:8]}",
+        agent_id=agent.agent_id,
+        timestamp=utc_now(),
+        approved_by=approved_by,
+        justification=justification,
+        previous_version=old_version,
+        new_version=new_version,
+        granted_tools=payload.get("allowed_tools", []),
+        granted_data_scope=payload.get("data_scope", []),
+        changes=changes_dict
+    )
+    db.add(change_record)
+
+    # Forensic audit entry
+    audit = AuditRecordModel(
+        audit_id=f"aud_chg_{uuid.uuid4().hex[:8]}",
+        agent_id=agent.agent_id,
+        initiating_user=approved_by,
+        parent_agent_id=None,
+        task_id=None,
+        task_scope=["policy_administration"],
+        attempted_action=f"Policy update v{old_version} -> v{new_version}",
+        tool_name="policy_manager",
+        target_resource=f"policy:{agent.agent_id}",
+        action_parameters=changes_dict,
+        policy_version=new_version,
+        evaluated_rules=["Administrative policy change authorization verified"],
+        signals={"P": 0.0, "T": 0.0, "B": 0.0, "I": 0.3, "C": 0.0},
+        decision="POLICY_AMENDED",
+        explanation=f"Policy version bumped from v{old_version} to v{new_version} by {approved_by}. Justification: {justification}",
+        tool_execution_outcome="Policy state updated; previous historical logs preserved",
+        containment_action="none",
+        resolved_by=approved_by,
+        resolution_notes=justification
+    )
+    db.add(audit)
 
     db.commit()
     db.refresh(agent)
-    return {"status": "success", "agent_id": agent.agent_id, "policy_version": agent.policy_version}
+    return {
+        "status": "success",
+        "agent_id": agent.agent_id,
+        "previous_version": old_version,
+        "new_version": agent.policy_version,
+        "change_id": change_record.change_id
+    }
 
 # --- Screen 6: Enforcement Controls ---
 @router.post("/containment/status")

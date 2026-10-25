@@ -8,7 +8,7 @@ class PolicyEvaluationResult:
         requires_approval: bool = False,
         violated_rules: list[str] = None,
         approval_reason: str | None = None,
-        policy_status: str = "COMPLIANT"
+        policy_status: str = "allowed"  # "allowed", "prohibited", "not_covered", "requires_approval"
     ):
         self.is_hard_violation = is_hard_violation
         self.requires_approval = requires_approval
@@ -47,11 +47,11 @@ def evaluate_hard_policies(
     # 1. Agent status check (if paused or isolated, block all tool calls)
     if agent.status == "isolated":
         violated_rules.append(f"Agent {agent.agent_id} is ISOLATED by security containment. All actions blocked.")
-        return PolicyEvaluationResult(is_hard_violation=True, violated_rules=violated_rules, policy_status="ISOLATED_BLOCK")
+        return PolicyEvaluationResult(is_hard_violation=True, violated_rules=violated_rules, policy_status="prohibited")
 
     if agent.status == "paused":
         violated_rules.append(f"Agent {agent.agent_id} is PAUSED by administrator. Actions held.")
-        return PolicyEvaluationResult(is_hard_violation=False, requires_approval=True, approval_reason="Agent execution paused for review", policy_status="PAUSED")
+        return PolicyEvaluationResult(is_hard_violation=False, requires_approval=True, approval_reason="Agent execution paused for review", policy_status="requires_approval")
 
     # 2. Explicit restricted tools check
     restricted_tools = agent.restricted_tools or []
@@ -133,7 +133,7 @@ def evaluate_hard_policies(
         return PolicyEvaluationResult(
             is_hard_violation=True,
             violated_rules=violated_rules,
-            policy_status="VIOLATION"
+            policy_status="prohibited"
         )
 
     # If within policy boundaries but flags sensitive approval
@@ -142,11 +142,21 @@ def evaluate_hard_policies(
             is_hard_violation=False,
             requires_approval=True,
             approval_reason="; ".join(approval_reasons),
-            policy_status="REQUIRES_APPROVAL"
+            policy_status="requires_approval"
+        )
+
+    # Check if resource or tool is completely unmapped
+    all_known_resources = ["public_documents", "approved_internal_research_documents", "academic_papers", "invoices", "approved_vendor_records", "payment_drafts", "customer_profile", "order_history", "support_tickets", "refund_guidelines"]
+    if not any(k in target_resource.lower() for k in all_known_resources):
+        return PolicyEvaluationResult(
+            is_hard_violation=False,
+            requires_approval=True,
+            approval_reason=f"Resource '{target_resource}' is not covered by standard catalog",
+            policy_status="not_covered"
         )
 
     return PolicyEvaluationResult(
         is_hard_violation=False,
         requires_approval=False,
-        policy_status="COMPLIANT"
+        policy_status="allowed"
     )

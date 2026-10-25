@@ -112,6 +112,9 @@ export default function DriftAlerts({ alerts, onResolveAlert }: DriftAlertsProps
                       >
                         {alert.severity} Risk
                       </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase bg-slate-800 text-slate-300 border border-slate-700">
+                        Policy: {alert.policy_status || "prohibited"}
+                      </span>
                       <span className="text-xs text-slate-400 font-mono">{alert.alert_id}</span>
                       <span className="text-xs text-slate-500">•</span>
                       <span className="text-xs text-slate-400 font-mono">

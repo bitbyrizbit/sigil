@@ -215,7 +215,7 @@ def compute_risk_assessment(
             "I": round(I, 2),
             "C": round(C, 2)
         },
-        "policy_status": policy_res.policy_status,
+        "policy_status": policy_res.policy_status,  # "allowed", "prohibited", "not_covered", "requires_approval"
         "recommended_response": recommended_response,
         "enforced_response": enforced_response,
         "explanation": explanation,

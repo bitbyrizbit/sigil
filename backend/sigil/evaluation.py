@@ -34,8 +34,10 @@ def evaluate_baseline_a(scenario: dict[str, Any], agents_map: dict[str, dict]) -
 
 def evaluate_baseline_b(scenario: dict[str, Any], agents_map: dict[str, dict]) -> dict[str, Any]:
     """
-    Baseline B: Role checks plus simple static volume threshold (>100).
-    Lacks task context awareness, input provenance tracing, and adaptive hold.
+    Baseline B: Role checks plus volume threshold.
+    Fair implementation: checks permitted tools AND flags any volume > 20 items.
+    Catches brute-force/gradual volume surges, but misses subtle in-volume task mismatches,
+    prompt injection provenance, and multi-agent delegation scope escalation.
     """
     start_time = time.perf_counter()
     agent_id = scenario["agent_id"]
@@ -47,7 +49,7 @@ def evaluate_baseline_b(scenario: dict[str, Any], agents_map: dict[str, dict]) -
         decision = "BLOCK"
     elif tool_name not in agent.get("allowed_tools", []):
         decision = "BLOCK"
-    elif data_volume > 100:  # crude threshold
+    elif data_volume > 20:  # Fair threshold: flags anomalous volume surges
         decision = "BLOCK"
     else:
         decision = "ALLOW"
@@ -80,9 +82,23 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
 
     total_violations = sum(1 for s in SCENARIO_DEFINITIONS if s["is_violation"])
     total_benign = sum(1 for s in SCENARIO_DEFINITIONS if not s["is_violation"])
+    total_ambiguous = sum(1 for s in SCENARIO_DEFINITIONS if "ambiguous" in s["category"])
+    total_heldout = sum(1 for s in SCENARIO_DEFINITIONS if "heldout" in s["category"])
+
+    category_stats = {}
 
     for sc in SCENARIO_DEFINITIONS:
         is_violation = sc["is_violation"]
+        cat = sc["category"]
+        if cat not in category_stats:
+            category_stats[cat] = {
+                "name": cat.replace("_", " ").title(),
+                "total": 0,
+                "baseline_a_caught": 0,
+                "baseline_b_caught": 0,
+                "sigil_caught": 0,
+            }
+        category_stats[cat]["total"] += 1
 
         # 1. Baseline A
         res_a = evaluate_baseline_a(sc, agents_map)
@@ -92,6 +108,7 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
                 systems["Baseline A (Static RBAC)"]["tp"] += 1
                 if res_a["stopped"]:
                     systems["Baseline A (Static RBAC)"]["prevented"] += 1
+                category_stats[cat]["baseline_a_caught"] += 1
             else:
                 systems["Baseline A (Static RBAC)"]["fn"] += 1
         else:
@@ -100,9 +117,11 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
             else:
                 systems["Baseline A (Static RBAC)"]["tn"] += 1
                 systems["Baseline A (Static RBAC)"]["legit_completed"] += 1
+                category_stats[cat]["baseline_a_caught"] += 1
         systems["Baseline A (Static RBAC)"]["latencies"].append(res_a["latency_ms"])
         systems["Baseline A (Static RBAC)"]["details"].append({
             "scenario": sc["name"],
+            "category": cat,
             "decision": res_a["decision"],
             "correct": (flagged_a == is_violation)
         })
@@ -115,6 +134,7 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
                 systems["Baseline B (RBAC + Volume Threshold)"]["tp"] += 1
                 if res_b["stopped"]:
                     systems["Baseline B (RBAC + Volume Threshold)"]["prevented"] += 1
+                category_stats[cat]["baseline_b_caught"] += 1
             else:
                 systems["Baseline B (RBAC + Volume Threshold)"]["fn"] += 1
         else:
@@ -123,9 +143,11 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
             else:
                 systems["Baseline B (RBAC + Volume Threshold)"]["tn"] += 1
                 systems["Baseline B (RBAC + Volume Threshold)"]["legit_completed"] += 1
+                category_stats[cat]["baseline_b_caught"] += 1
         systems["Baseline B (RBAC + Volume Threshold)"]["latencies"].append(res_b["latency_ms"])
         systems["Baseline B (RBAC + Volume Threshold)"]["details"].append({
             "scenario": sc["name"],
+            "category": cat,
             "decision": res_b["decision"],
             "correct": (flagged_b == is_violation)
         })
@@ -155,6 +177,7 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
                 systems["Sigil (Context-Aware Identity Drift Layer)"]["tp"] += 1
                 if gw_resp.execution_status in ["blocked", "held"]:
                     systems["Sigil (Context-Aware Identity Drift Layer)"]["prevented"] += 1
+                category_stats[cat]["sigil_caught"] += 1
             else:
                 systems["Sigil (Context-Aware Identity Drift Layer)"]["fn"] += 1
         else:
@@ -163,12 +186,15 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
             else:
                 systems["Sigil (Context-Aware Identity Drift Layer)"]["tn"] += 1
                 systems["Sigil (Context-Aware Identity Drift Layer)"]["legit_completed"] += 1
+                category_stats[cat]["sigil_caught"] += 1
 
         systems["Sigil (Context-Aware Identity Drift Layer)"]["latencies"].append(sigil_lat)
         systems["Sigil (Context-Aware Identity Drift Layer)"]["details"].append({
             "scenario": sc["name"],
+            "category": cat,
             "decision": gw_resp.decision,
             "risk_score": gw_resp.risk_score,
+            "policy_status": gw_resp.policy_status,
             "correct": (flagged_sigil == is_violation or (not is_violation and gw_resp.decision in ["ALLOW", "HOLD_FOR_APPROVAL"]))
         })
 
@@ -204,7 +230,10 @@ def run_evaluation_benchmark(db: Session) -> dict[str, Any]:
     return {
         "timestamp": time.time(),
         "total_scenarios": len(SCENARIO_DEFINITIONS),
-        "total_violations": total_violations,
-        "total_benign": total_benign,
-        "comparisons": summary
+        "total_attacks": total_violations,
+        "total_legitimate": total_benign,
+        "total_ambiguous": total_ambiguous,
+        "total_heldout": total_heldout,
+        "comparisons": summary,
+        "category_breakdown": list(category_stats.values())
     }

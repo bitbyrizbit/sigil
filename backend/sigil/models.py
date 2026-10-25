@@ -47,7 +47,7 @@ class EventModel(Base):
 
     event_id = Column(String(100), primary_key=True)
     timestamp = Column(DateTime, default=utc_now)
-    agent_id = Column(String(100), ForeignKey("agents.agent_id"), nullable=False)
+    agent_id = Column(String(100), index=True, nullable=False)
     initiating_user = Column(String(100), default="user_analyst_01")
     session_id = Column(String(100), default="sess_default")
     parent_agent_id = Column(String(100), nullable=True)
@@ -72,7 +72,7 @@ class AlertModel(Base):
 
     alert_id = Column(String(100), primary_key=True)
     event_id = Column(String(100), ForeignKey("events.event_id"), nullable=False)
-    agent_id = Column(String(100), ForeignKey("agents.agent_id"), nullable=False)
+    agent_id = Column(String(100), index=True, nullable=False)
     severity = Column(String(50), nullable=False)  # LOW, MEDIUM, HIGH, CRITICAL
     confidence = Column(Float, default=0.9)
     risk_score = Column(Float, default=0.0)
@@ -90,16 +90,32 @@ class ApprovalModel(Base):
 
     approval_id = Column(String(100), primary_key=True)
     event_id = Column(String(100), ForeignKey("events.event_id"), nullable=False)
-    agent_id = Column(String(100), ForeignKey("agents.agent_id"), nullable=False)
+    agent_id = Column(String(100), index=True, nullable=False)
     action_summary = Column(Text, nullable=False)
     target_resource = Column(String(200), nullable=False)
     requested_tool = Column(String(100), nullable=False)
+    operation_type = Column(String(100), default="execute")
+    action_parameters = Column(JSON, default=dict)
     data_volume = Column(Integer, default=1)
     status = Column(String(50), default="PENDING")  # PENDING, APPROVED, REJECTED
     requested_at = Column(DateTime, default=utc_now)
     resolved_at = Column(DateTime, nullable=True)
     resolved_by = Column(String(100), nullable=True)
     justification = Column(Text, nullable=True)
+
+class PolicyChangeModel(Base):
+    __tablename__ = "policy_changes"
+
+    change_id = Column(String(100), primary_key=True)
+    timestamp = Column(DateTime, default=utc_now)
+    agent_id = Column(String(100), ForeignKey("agents.agent_id"), nullable=False)
+    approved_by = Column(String(100), nullable=False)
+    justification = Column(Text, nullable=False)
+    previous_version = Column(String(50), nullable=False)
+    new_version = Column(String(50), nullable=False)
+    granted_tools = Column(JSON, default=list)
+    granted_data_scope = Column(JSON, default=list)
+    changes = Column(JSON, default=dict)
 
 class AuditRecordModel(Base):
     __tablename__ = "audit_records"

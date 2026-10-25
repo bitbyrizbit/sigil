@@ -79,6 +79,7 @@ class GatewayResponse:
         confidence: float,
         explanation: str,
         evidence: list[str],
+        policy_status: str = "allowed",
         tool_output: dict[str, Any] | None = None,
         approval_id: str | None = None,
         alert_id: str | None = None
@@ -91,6 +92,7 @@ class GatewayResponse:
         self.confidence = confidence
         self.explanation = explanation
         self.evidence = evidence
+        self.policy_status = policy_status
         self.tool_output = tool_output
         self.approval_id = approval_id
         self.alert_id = alert_id
@@ -105,6 +107,7 @@ class GatewayResponse:
             "confidence": self.confidence,
             "explanation": self.explanation,
             "evidence": self.evidence,
+            "policy_status": self.policy_status,
             "tool_output": self.tool_output,
             "approval_id": self.approval_id,
             "alert_id": self.alert_id
@@ -205,6 +208,7 @@ def process_tool_call(
             confidence=0.99,
             explanation=block_explanation,
             evidence=["Agent identity is not registered in the system registry"],
+            policy_status="prohibited",
             tool_output=None,
             alert_id=alert_id
         )
@@ -259,86 +263,7 @@ def process_tool_call(
     evidence = assessment["evidence"]
     signals = assessment["signals"]
 
-    # 6. Enforce Response Proportionately (Module 6)
-    tool_output = None
-    approval_id = None
-    alert_id = None
-    execution_status = "blocked"
-    containment_action = "none"
-    event_result = "denied"
-
-    if decision == "ALLOW":
-        # Safe: execute tool outside the agent
-        tool_output = execute_simulated_tool(tool_name, operation_type, target_resource, action_params)
-        execution_status = "executed"
-        event_result = "allowed"
-        containment_action = "allowed_within_policy"
-
-    elif decision == "HOLD_FOR_APPROVAL":
-        # Hold: do NOT execute tool. Enqueue for human approval
-        approval_id = f"appr_{uuid.uuid4().hex[:8]}"
-        approval = ApprovalModel(
-            approval_id=approval_id,
-            event_id=event_id,
-            agent_id=agent_id,
-            action_summary=f"Attempted {operation_type} on {target_resource} via {tool_name}",
-            target_resource=target_resource,
-            requested_tool=tool_name,
-            data_volume=data_volume,
-            status="PENDING",
-            requested_at=utc_now(),
-            justification=explanation
-        )
-        db.add(approval)
-        execution_status = "held"
-        event_result = "pending_approval"
-        containment_action = "held_in_approval_queue"
-
-        # Also create alert for visibility
-        alert_id = f"alt_{uuid.uuid4().hex[:8]}"
-        alert = AlertModel(
-            alert_id=alert_id,
-            event_id=event_id,
-            agent_id=agent_id,
-            severity=severity,
-            confidence=confidence,
-            risk_score=risk_score,
-            policy_status="REQUIRES_APPROVAL",
-            recommended_response="HOLD_FOR_APPROVAL",
-            enforced_response="HOLD_FOR_APPROVAL",
-            explanation=explanation,
-            evidence=evidence,
-            signals=signals,
-            status="OPEN"
-        )
-        db.add(alert)
-
-    elif decision == "BLOCK":
-        # Disallow: technical block before reaching tool
-        execution_status = "blocked"
-        event_result = "blocked"
-        containment_action = "technical_gateway_block"
-
-        # Create incident alert
-        alert_id = f"alt_{uuid.uuid4().hex[:8]}"
-        alert = AlertModel(
-            alert_id=alert_id,
-            event_id=event_id,
-            agent_id=agent_id,
-            severity=severity,
-            confidence=confidence,
-            risk_score=risk_score,
-            policy_status=policy_res.policy_status,
-            recommended_response=assessment["recommended_response"],
-            enforced_response="BLOCK",
-            explanation=explanation,
-            evidence=evidence,
-            signals=signals,
-            status="OPEN"
-        )
-        db.add(alert)
-
-    # 7. Record Event in Event Collector (Module 2)
+    # 6. Record Event in Event Collector FIRST (satisfies PostgreSQL FK constraint)
     event = EventModel(
         event_id=event_id,
         agent_id=agent_id,
@@ -353,7 +278,7 @@ def process_tool_call(
         action_parameters=action_params,
         policy_version=agent.policy_version,
         authorization_decision=decision,
-        result=event_result,
+        result="allowed" if decision == "ALLOW" else ("pending_approval" if decision == "HOLD_FOR_APPROVAL" else "blocked"),
         data_volume=data_volume,
         destination=destination,
         action_frequency=1.0,
@@ -362,6 +287,84 @@ def process_tool_call(
         risk_score=risk_score
     )
     db.add(event)
+    db.flush()
+
+    # 7. Enforce Response Proportionately (Module 6)
+    tool_output = None
+    approval_id = None
+    alert_id = None
+    execution_status = "blocked"
+    containment_action = "none"
+
+    if decision == "ALLOW":
+        # Safe: execute tool outside the agent
+        tool_output = execute_simulated_tool(tool_name, operation_type, target_resource, action_params)
+        execution_status = "executed"
+        containment_action = "allowed_within_policy"
+
+    elif decision == "HOLD_FOR_APPROVAL":
+        # Hold: do NOT execute tool. Enqueue for human approval
+        approval_id = f"appr_{uuid.uuid4().hex[:8]}"
+        approval = ApprovalModel(
+            approval_id=approval_id,
+            event_id=event_id,
+            agent_id=agent_id,
+            action_summary=f"Attempted {operation_type} on {target_resource} via {tool_name}",
+            target_resource=target_resource,
+            requested_tool=tool_name,
+            operation_type=operation_type,
+            action_parameters=action_params,
+            data_volume=data_volume,
+            status="PENDING",
+            requested_at=utc_now(),
+            justification=explanation
+        )
+        db.add(approval)
+        execution_status = "held"
+        containment_action = "held_in_approval_queue"
+
+        # Also create alert for visibility
+        alert_id = f"alt_{uuid.uuid4().hex[:8]}"
+        alert = AlertModel(
+            alert_id=alert_id,
+            event_id=event_id,
+            agent_id=agent_id,
+            severity=severity,
+            confidence=confidence,
+            risk_score=risk_score,
+            policy_status=assessment.get("policy_status", "requires_approval"),
+            recommended_response="HOLD_FOR_APPROVAL",
+            enforced_response="HOLD_FOR_APPROVAL",
+            explanation=explanation,
+            evidence=evidence,
+            signals=signals,
+            status="OPEN"
+        )
+        db.add(alert)
+
+    elif decision == "BLOCK":
+        # Disallow: technical block before reaching tool
+        execution_status = "blocked"
+        containment_action = "technical_gateway_block"
+
+        # Create incident alert
+        alert_id = f"alt_{uuid.uuid4().hex[:8]}"
+        alert = AlertModel(
+            alert_id=alert_id,
+            event_id=event_id,
+            agent_id=agent_id,
+            severity=severity,
+            confidence=confidence,
+            risk_score=risk_score,
+            policy_status=assessment.get("policy_status", "prohibited"),
+            recommended_response=assessment["recommended_response"],
+            enforced_response="BLOCK",
+            explanation=explanation,
+            evidence=evidence,
+            signals=signals,
+            status="OPEN"
+        )
+        db.add(alert)
 
     # 8. Record Audit Trail answering the 9 questions (Module 7)
     # 1. Which agent initiated? agent_id
@@ -405,6 +408,7 @@ def process_tool_call(
         confidence=confidence,
         explanation=explanation,
         evidence=evidence,
+        policy_status=assessment.get("policy_status", "allowed"),
         tool_output=tool_output,
         approval_id=approval_id,
         alert_id=alert_id

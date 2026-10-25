@@ -76,13 +76,36 @@ def test_hold_until_approval_flow(db_session):
     assert approval is not None
     assert approval.status == "PENDING"
 
-    # Resolve approval by admin
+    # Test Self-Approval Prevention
+    self_appr = resolve_approval(
+        db=db_session,
+        approval_id=resp.approval_id,
+        action="APPROVE",
+        resolved_by="agent_support_01",  # Agent attempting to approve itself!
+        justification="I am approving my own refund"
+    )
+    assert self_appr["status"] == "error"
+    assert "Security violation" in self_appr["message"]
+
+    # Test Hard Binding Target Mismatch
+    mismatch_appr = resolve_approval(
+        db=db_session,
+        approval_id=resp.approval_id,
+        action="APPROVE",
+        resolved_by="lead_supervisor",
+        verify_target="unauthorized_tampered_target_resource"
+    )
+    assert mismatch_appr["status"] == "error"
+    assert "Security binding mismatch" in mismatch_appr["message"]
+
+    # Resolve approval by authorized human supervisor
     res = resolve_approval(
         db=db_session,
         approval_id=resp.approval_id,
         action="APPROVE",
         resolved_by="lead_supervisor",
-        justification="Verified customer exception approved"
+        justification="Verified customer exception approved",
+        verify_target="order_history/refund_ticket_991"
     )
     assert res["status"] == "success"
     assert res["new_status"] == "APPROVED"

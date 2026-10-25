@@ -86,7 +86,7 @@ def test_research_agent_allowed_action(sample_agents):
     )
     assert not res.is_hard_violation
     assert not res.requires_approval
-    assert res.policy_status == "COMPLIANT"
+    assert res.policy_status == "allowed"
 
 def test_research_agent_prohibited_payroll_access(sample_agents):
     agent = sample_agents["research"]
@@ -108,7 +108,7 @@ def test_research_agent_prohibited_payroll_access(sample_agents):
         data_volume=1
     )
     assert res.is_hard_violation
-    assert res.policy_status == "VIOLATION"
+    assert res.policy_status == "prohibited"
     assert any("RESTRICTED" in r for r in res.violated_rules)
 
 def test_support_agent_refund_approval_threshold(sample_agents):
