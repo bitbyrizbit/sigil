@@ -52,16 +52,16 @@ export default function Navbar({
 
   return (
     <div className="w-full pt-4 pb-2">
-      {/* Top Header Area */}
-      <div className="w-full pb-6 border-b border-ink/15">
-        {/* Sigil moved to the left, slanted & tilted (-rotate-6), slow staggered sequential dots on hover */}
-        <div className="w-full flex items-start justify-start pl-1 sm:pl-2 pt-2">
+      {/* Top Header Area: Sigil on the left, Tagline & action buttons beside it in one horizontal line */}
+      <div className="w-full pb-6 border-b border-ink/15 flex flex-col md:flex-row md:items-center justify-start gap-6 md:gap-10">
+        {/* Sigil moved to the left, slanted & tilted (-rotate-6), lowered slightly for horizontal balance */}
+        <div className="flex-shrink-0 pt-3 md:pt-4 pl-1 sm:pl-2">
           <div
             className="group inline-flex items-baseline cursor-pointer select-none"
             onClick={() => setActiveTab("overview")}
             title="Sigil home"
           >
-            <span className="font-serif italic font-bold text-7xl sm:text-8xl md:text-9xl text-pinkPrimary tracking-tight lowercase inline-block transform -rotate-6 origin-bottom-left transition-colors">
+            <span className="font-serif italic font-bold text-6xl sm:text-7xl md:text-8xl text-pinkPrimary tracking-tight lowercase inline-block transform -rotate-6 origin-bottom-left transition-colors">
               sigil
               <span className="inline-block font-serif font-bold italic ml-0.5">
                 <span className="dot-1 inline-block">.</span>
@@ -72,21 +72,21 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Identity drift line: stays centered */}
-        <div className="mt-8 sm:mt-10 text-center">
-          <p className="text-xs sm:text-sm font-sans text-inkMuted tracking-wide leading-relaxed max-w-xl mx-auto">
+        {/* Beside sigil: Increased font size tagline, with action buttons placed directly below it */}
+        <div className="flex flex-col items-start justify-center space-y-3 pt-2 md:pt-3">
+          <p className="text-sm sm:text-base md:text-lg font-sans text-ink font-medium tracking-normal leading-relaxed max-w-2xl">
             Identity drift detection and response layer for autonomous agents
           </p>
 
-          {/* Action Controls: Pill-shaped, tactile, centered row */}
-          <div className="flex items-center justify-center gap-2.5 flex-wrap mt-5">
+          {/* Action Controls: Pill-shaped buttons beside sigil */}
+          <div className="flex items-center justify-start gap-2.5 flex-wrap">
             <button
               onClick={onOpenSimulate}
               className="inline-flex items-center px-4 py-2 text-xs font-sans font-medium rounded-full bg-paper text-ink border-1.5 border-ink/80 shadow-ink-sm hover:shadow-ink hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
               style={{ borderWidth: "1.5px" }}
             >
               <Send className="w-3.5 h-3.5 mr-1.5 text-pinkPrimary stroke-[2]" />
-              Gateway simulator
+              Test an action
             </button>
 
             <button
@@ -114,7 +114,7 @@ export default function Navbar({
               disabled={loading}
               className="inline-flex items-center p-2 rounded-full bg-paper text-ink border-1.5 border-ink/80 shadow-ink-sm hover:shadow-ink hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
               style={{ borderWidth: "1.5px" }}
-              title="Reset baseline registry"
+              title="Reset demo data"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-ink stroke-[2] ${loading ? "animate-spin text-pinkPrimary" : ""}`} />
             </button>
@@ -122,8 +122,8 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Segmented Pill Tabs Navigation (Seamless on page, centered) */}
-      <nav className="flex items-center justify-start md:justify-center space-x-2 overflow-x-auto py-4 scrollbar-none">
+      {/* Segmented Pill Tabs Navigation (Seamless on page, left-aligned) */}
+      <nav className="flex items-center justify-start space-x-2 overflow-x-auto py-4 scrollbar-none">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;

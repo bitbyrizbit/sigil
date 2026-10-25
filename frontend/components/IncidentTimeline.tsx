@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { GitFork, ChevronDown, ChevronRight, HelpCircle } from "lucide-react";
 import { DecisionStamp } from "./Stamp";
+import { formatIST } from "../lib/formatTime";
 
 interface IncidentTimelineProps {
   timeline: any[];
@@ -56,7 +57,7 @@ export default function IncidentTimeline({ timeline }: IncidentTimelineProps) {
                         <span className="font-num font-bold text-ink">{audit.audit_id}</span>
                         <span className="text-ink/30">•</span>
                         <span className="text-inkMuted font-num tabular-nums">
-                          {audit.timestamp ? new Date(audit.timestamp).toLocaleTimeString() : ""}
+                          {formatIST(audit.timestamp)}
                         </span>
                         {audit.parent_agent_id && (
                           <span className="px-2.5 py-0.5 rounded-full border border-ink/20 bg-hold/30 text-ink text-[11px] font-semibold">

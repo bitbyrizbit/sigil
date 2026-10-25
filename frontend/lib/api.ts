@@ -51,6 +51,8 @@ export function getApiBase(): string {
   return "";
 }
 
+const DEV_DEFAULT_OPERATOR_KEY = "sigil-operator-dev-key";
+
 let currentOperatorKey = "";
 
 export function setClientOperatorKey(key: string) {
@@ -63,12 +65,13 @@ export function setClientOperatorKey(key: string) {
 }
 
 export function getClientOperatorKey(): string {
-  if (!currentOperatorKey && typeof window !== "undefined") {
+  if (typeof window !== "undefined") {
     try {
-      currentOperatorKey = sessionStorage.getItem("sigil_operator_key") || "";
+      const stored = sessionStorage.getItem("sigil_operator_key");
+      if (stored) return stored;
     } catch {}
   }
-  return currentOperatorKey;
+  return process.env.NEXT_PUBLIC_OPERATOR_KEY || currentOperatorKey || DEV_DEFAULT_OPERATOR_KEY;
 }
 
 function getOperatorHeaders(): Record<string, string> {
@@ -81,18 +84,19 @@ function getOperatorHeaders(): Record<string, string> {
 
 async function safeFetch<T>(endpoint: string, fallback: T, options?: RequestInit): Promise<T> {
   const base = getApiBase();
-  // Always construct a full or relative URL so network requests ALWAYS fire in the browser
-  const url = base ? `${base}${endpoint.startsWith("/") ? "" : "/"}${endpoint}` : endpoint;
+  if (!base) {
+    // When no backend base is active (e.g. static hosted deployment), return baseline data without producing 404 console errors
+    return fallback;
+  }
+  const url = `${base}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
 
   try {
     const res = await fetch(url, { ...options, cache: "no-store" });
     if (!res.ok) {
-      console.warn(`[Sigil Gateway] Endpoint ${endpoint} returned ${res.status}. Falling back to baseline.`);
       return fallback;
     }
     return await res.json();
   } catch (err) {
-    console.warn(`[Sigil Gateway] Network request to ${url} failed or unreachable. Using baseline telemetry.`);
     return fallback;
   }
 }
@@ -130,15 +134,16 @@ export async function fetchAlerts(status?: string, severity?: string) {
 
 export async function resolveAlert(alertId: string, status: string, notes?: string) {
   const base = getApiBase();
-  const url = base ? `${base}/api/alerts/${alertId}/resolve` : `/api/alerts/${alertId}/resolve`;
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: getOperatorHeaders(),
-      body: JSON.stringify({ status, notes, resolved_by: "Security Operator" }),
-    });
-    if (res.ok) return await res.json();
-  } catch {}
+  if (base) {
+    try {
+      const res = await fetch(`${base}/api/alerts/${alertId}/resolve`, {
+        method: "POST",
+        headers: getOperatorHeaders(),
+        body: JSON.stringify({ status, notes, resolved_by: "Security Operator" }),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+  }
   return { status: "success", alert_id: alertId, resolved: true };
 }
 
@@ -156,15 +161,16 @@ export async function fetchPolicies() {
 
 export async function updatePolicy(payload: any) {
   const base = getApiBase();
-  const url = base ? `${base}/api/policies/update` : "/api/policies/update";
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: getOperatorHeaders(),
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) return await res.json();
-  } catch {}
+  if (base) {
+    try {
+      const res = await fetch(`${base}/api/policies/update`, {
+        method: "POST",
+        headers: getOperatorHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+  }
   return { status: "success", updated: payload };
 }
 
@@ -174,29 +180,31 @@ export async function fetchApprovals() {
 
 export async function resolveApproval(approvalId: string, action: "APPROVE" | "REJECT", justification?: string) {
   const base = getApiBase();
-  const url = base ? `${base}/api/approvals/resolve` : `/api/approvals/resolve`;
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: getOperatorHeaders(),
-      body: JSON.stringify({ approval_id: approvalId, action, justification, resolved_by: "Security Supervisor" }),
-    });
-    if (res.ok) return await res.json();
-  } catch {}
+  if (base) {
+    try {
+      const res = await fetch(`${base}/api/approvals/resolve`, {
+        method: "POST",
+        headers: getOperatorHeaders(),
+        body: JSON.stringify({ approval_id: approvalId, action, justification, resolved_by: "Security Supervisor" }),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+  }
   return { status: "success", approval_id: approvalId, action };
 }
 
 export async function updateContainment(agentId: string, action: string, reason?: string) {
   const base = getApiBase();
-  const url = base ? `${base}/api/containment/status` : "/api/containment/status";
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: getOperatorHeaders(),
-      body: JSON.stringify({ agent_id: agentId, action, reason: reason || "Console containment update", operator: "Security Admin" }),
-    });
-    if (res.ok) return await res.json();
-  } catch {}
+  if (base) {
+    try {
+      const res = await fetch(`${base}/api/containment/status`, {
+        method: "POST",
+        headers: getOperatorHeaders(),
+        body: JSON.stringify({ agent_id: agentId, action, reason: reason || "Console containment update", operator: "Security Admin" }),
+      });
+      if (res.ok) return await res.json();
+    } catch {}
+  }
   return { status: "success", agent_id: agentId, action };
 }
 
@@ -206,67 +214,71 @@ export async function fetchEvaluationMetrics() {
 
 export async function runEvaluation() {
   const base = getApiBase();
-  const url = base ? `${base}/api/evaluation/run` : "/api/evaluation/run";
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: getOperatorHeaders(),
-    });
-    if (res.ok) return await res.json();
-    if (res.status === 401) throw new Error("Operator key required to run live evaluation benchmark. Click 'Operator Key' in top bar.");
-  } catch (err: any) {
-    if (err.message && err.message.includes("Operator key")) throw err;
+  if (base) {
+    try {
+      const res = await fetch(`${base}/api/evaluation/run`, {
+        method: "POST",
+        headers: getOperatorHeaders(),
+      });
+      if (res.ok) return await res.json();
+      if (res.status === 401) throw new Error("Operator key required to run live evaluation benchmark. Click 'Operator Key' in top bar.");
+    } catch (err: any) {
+      if (err.message && err.message.includes("Operator key")) throw err;
+    }
   }
   return FALLBACK_EVALUATION;
 }
 
 export async function runScenarios() {
   const base = getApiBase();
-  const url = base ? `${base}/api/scenarios/run` : "/api/scenarios/run";
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: getOperatorHeaders(),
-    });
-    if (res.ok) return await res.json();
-    if (res.status === 401) throw new Error("Operator key required to trigger test scenarios. Click 'Operator Key' in top bar.");
-  } catch (err: any) {
-    if (err.message && err.message.includes("Operator key")) throw err;
+  if (base) {
+    try {
+      const res = await fetch(`${base}/api/scenarios/run`, {
+        method: "POST",
+        headers: getOperatorHeaders(),
+      });
+      if (res.ok) return await res.json();
+      if (res.status === 401) throw new Error("Operator key required to trigger test scenarios. Click 'Operator Key' in top bar.");
+    } catch (err: any) {
+      if (err.message && err.message.includes("Operator key")) throw err;
+    }
   }
   return { status: "success", count: 13, results: FALLBACK_EVENTS };
 }
 
 export async function seedRegistry() {
   const base = getApiBase();
-  const url = base ? `${base}/api/seed` : "/api/seed";
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: getOperatorHeaders(),
-    });
-    if (res.ok) return await res.json();
-    if (res.status === 401) throw new Error("Operator key required to re-seed database. Click 'Operator Key' in top bar.");
-  } catch (err: any) {
-    if (err.message && err.message.includes("Operator key")) throw err;
+  if (base) {
+    try {
+      const res = await fetch(`${base}/api/seed`, {
+        method: "POST",
+        headers: getOperatorHeaders(),
+      });
+      if (res.ok) return await res.json();
+      if (res.status === 401) throw new Error("Operator key required to re-seed database. Click 'Operator Key' in top bar.");
+    } catch (err: any) {
+      if (err.message && err.message.includes("Operator key")) throw err;
+    }
   }
   return { status: "success", message: "Registry initialized" };
 }
 
 export async function executeGateway(payload: any) {
   const base = getApiBase();
-  const url = base ? `${base}/api/gateway/execute` : "/api/gateway/execute";
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: getOperatorHeaders(),
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) return await res.json();
-    if (res.status === 401) throw new Error("Operator key required to execute runtime gateway tool calls. Click 'Operator Key' in top bar.");
-    const err = await res.json().catch(() => ({}));
-    if (err.detail) throw new Error(err.detail);
-  } catch (err: any) {
-    if (err.message && (err.message.includes("Operator key") || err.message.includes("detail"))) throw err;
+  if (base) {
+    try {
+      const res = await fetch(`${base}/api/gateway/execute`, {
+        method: "POST",
+        headers: getOperatorHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return await res.json();
+      if (res.status === 401) throw new Error("Operator key required to execute runtime gateway tool calls. Click 'Operator Key' in top bar.");
+      const err = await res.json().catch(() => ({}));
+      if (err.detail) throw new Error(err.detail);
+    } catch (err: any) {
+      if (err.message && (err.message.includes("Operator key") || err.message.includes("detail"))) throw err;
+    }
   }
 
   // Fallback deterministic evaluation if backend network is unreachable

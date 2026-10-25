@@ -183,8 +183,8 @@ export default function Home() {
         />
       </div>
 
-      {/* Padded Container: Prevents any element from sticking to the screen walls */}
-      <div className="w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-6 md:py-8 flex flex-col flex-1">
+      {/* Left-aligned Container extending comfortably with balanced margins */}
+      <div className="w-full max-w-none px-4 sm:px-0 sm:pl-[7%] sm:pr-[5%] py-6 md:py-8 flex flex-col flex-1">
         <Navbar
           activeTab={activeTab}
           setActiveTab={setActiveTab}

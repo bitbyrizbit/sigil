@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import { Users, AlertTriangle, ShieldAlert, Clock, ArrowUpRight, PlayCircle } from "lucide-react";
 import { DecisionStamp } from "./Stamp";
+import { formatIST } from "../lib/formatTime";
 
 interface OverviewProps {
   summary: {
@@ -183,7 +184,7 @@ export default function OverviewPanel({
 
         {recentEvents.length === 0 ? (
           <div className="text-center py-10 text-inkMuted text-xs font-sans">
-            No events recorded yet. Click &quot;Run 13 test scenarios&quot; or launch the &quot;Gateway simulator&quot; to inspect runtime enforcement.
+            No events recorded yet. Click &quot;Run 13 test scenarios&quot; or launch &quot;Test an action&quot; to inspect runtime enforcement.
           </div>
         ) : (
           /* Table Container with Contained Vertical Scroll: Inside scrolls this box only, outside scrolls page */
@@ -195,7 +196,7 @@ export default function OverviewPanel({
             <table className="w-full text-left text-xs border-collapse font-sans min-w-[850px]">
               <thead className="text-[11px] font-sans font-bold text-inkMuted border-b border-ink/15 bg-canvas/90 sticky top-0 backdrop-blur-sm z-10">
                 <tr>
-                  <th className="py-2.5 px-3">Time</th>
+                  <th className="py-2.5 px-3">Time (IST)</th>
                   <th className="py-2.5 px-3">Agent</th>
                   <th className="py-2.5 px-3">Tool &amp; operation</th>
                   <th className="py-2.5 px-3">Target resource</th>
@@ -208,7 +209,7 @@ export default function OverviewPanel({
                 {recentEvents.map((evt) => (
                   <tr key={evt.event_id} className="hover:bg-canvas/30 transition-colors">
                     <td className="py-3 px-3 text-inkMuted font-num text-[11px] tabular-nums whitespace-nowrap">
-                      {evt.timestamp ? new Date(evt.timestamp).toLocaleTimeString() : "--:--:--"}
+                      {formatIST(evt.timestamp)}
                     </td>
                     <td className="py-3 px-3 whitespace-nowrap font-sans">
                       <span className="font-semibold text-ink block">{evt.agent_name}</span>

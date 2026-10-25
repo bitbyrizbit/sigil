@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Activity, Search, ChevronDown, ChevronRight } from "lucide-react";
 import { DecisionStamp } from "./Stamp";
+import { formatIST } from "../lib/formatTime";
 
 interface LiveActivityProps {
   events: any[];
@@ -84,7 +85,7 @@ export default function LiveActivity({ events }: LiveActivityProps) {
               <tr>
                 <th className="py-3 px-3 w-8"></th>
                 <th className="py-3 px-3">Event ID</th>
-                <th className="py-3 px-3">Time</th>
+                <th className="py-3 px-3">Time (IST)</th>
                 <th className="py-3 px-3">Agent</th>
                 <th className="py-3 px-3">Tool &amp; operation</th>
                 <th className="py-3 px-3">Target resource</th>
@@ -108,7 +109,7 @@ export default function LiveActivity({ events }: LiveActivityProps) {
                       </td>
                       <td className="py-3 px-3 font-num font-semibold text-ink whitespace-nowrap">{e.event_id}</td>
                       <td className="py-3 px-3 text-inkMuted font-num tabular-nums whitespace-nowrap">
-                        {e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : "--"}
+                        {formatIST(e.timestamp)}
                       </td>
                       <td className="py-3 px-3 whitespace-nowrap font-medium">{e.agent_id}</td>
                       <td className="py-3 px-3 whitespace-nowrap">

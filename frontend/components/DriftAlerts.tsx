@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { AlertTriangle, CheckCircle, Check, Sparkles } from "lucide-react";
 import { DecisionStamp, SignalBar } from "./Stamp";
+import { formatIST } from "../lib/formatTime";
 
 interface DriftAlertsProps {
   alerts: any[];
@@ -123,7 +124,7 @@ export default function DriftAlerts({ alerts, onResolveAlert }: DriftAlertsProps
                       </span>
                       <span className="text-xs font-num text-inkMuted">{alert.alert_id}</span>
                       <span className="text-xs font-num text-inkMuted tabular-nums">
-                        {alert.created_at ? new Date(alert.created_at).toLocaleTimeString() : ""}
+                        {formatIST(alert.created_at)}
                       </span>
                     </div>
 

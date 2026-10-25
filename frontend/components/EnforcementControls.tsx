@@ -3,6 +3,7 @@
 import React from "react";
 import { Lock, ShieldAlert, Clock, Check, X } from "lucide-react";
 import { DecisionStamp } from "./Stamp";
+import { formatIST } from "../lib/formatTime";
 
 interface EnforcementProps {
   agents: any[];
@@ -69,7 +70,7 @@ export default function EnforcementControls({
                     <span className="text-ink/30">•</span>
                     <strong className="text-pinkPrimary font-semibold">{app.agent_id}</strong>
                     <span className="text-ink/30">•</span>
-                    <span className="text-inkMuted font-num tabular-nums">{new Date(app.requested_at).toLocaleTimeString()}</span>
+                    <span className="text-inkMuted font-num tabular-nums">{formatIST(app.requested_at)}</span>
                   </div>
                   <h4 className="font-serif font-bold text-ink text-sm">{app.action_summary}</h4>
                   <div className="text-inkMuted text-[11px]">

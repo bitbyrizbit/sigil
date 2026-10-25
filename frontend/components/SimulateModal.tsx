@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Send, Shield } from "lucide-react";
+import { Send, Shield, ArrowLeft } from "lucide-react";
 import { executeGateway } from "../lib/api";
 import { DecisionStamp } from "./Stamp";
 
@@ -105,31 +105,44 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-ink/60 backdrop-blur-xs">
       <div
-        className="bg-paper border-1.5 border-ink/80 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-7 shadow-pink-lg relative font-sans"
+        className="bg-paper border-1.5 border-ink/80 rounded-3xl w-full max-w-2xl max-h-[85vh] shadow-pink-lg relative font-sans my-auto flex flex-col overflow-hidden"
         style={{ borderWidth: "1.5px" }}
       >
-        <button
-          onClick={onClose}
-          className="absolute right-5 top-5 text-inkMuted hover:text-ink p-1.5 rounded-full border border-ink/20 bg-canvas transition-colors"
-        >
-          <X className="w-4 h-4 stroke-[2]" />
-        </button>
-
-        <div className="flex items-center gap-3 mb-4 border-b border-ink/10 pb-3.5">
-          <div className="w-9 h-9 rounded-full bg-pinkPrimary/10 border border-pinkPrimary/30 flex items-center justify-center">
-            <Shield className="w-4 h-4 text-pinkPrimary stroke-[2]" />
+        {/* Modal Header: Pinned at top with intact rounded corners */}
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-ink/10 flex-shrink-0 bg-paper">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-pinkPrimary/10 border border-pinkPrimary/30 flex items-center justify-center flex-shrink-0">
+              <Shield className="w-4 h-4 text-pinkPrimary stroke-[2]" />
+            </div>
+            <div>
+              <h3 className="text-lg font-serif font-bold text-ink">Test AI Agent Action</h3>
+              <p className="text-xs text-inkMuted font-sans">Dispatch arbitrary tool calls through the live Sigil mediation proxy</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-serif font-bold text-ink">Interactive gateway simulator</h3>
-            <p className="text-xs text-inkMuted font-sans">Dispatch arbitrary tool calls through the live Sigil mediation proxy</p>
+
+          {/* Back button in place of close button */}
+          <div className="flex items-center flex-shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-1.5 rounded-full border border-ink/20 bg-canvas text-inkMuted hover:text-ink hover:border-ink/50 transition-all flex items-center gap-1.5 text-xs font-sans font-medium"
+              title="Go back"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 stroke-[2]" />
+              <span>Back</span>
+            </button>
           </div>
         </div>
 
-        {/* Quick Presets */}
-        <div className="pt-1">
+        {/* Scrollable Content Body: Contained within card so scrollbar never cuts outer rounded corners */}
+        <div className="p-6 pt-5 overflow-y-auto flex-1 overscroll-contain">
+          {/* Quick Presets */}
+          <div className="pt-1">
           <span className="text-[11px] font-sans font-bold text-inkMuted block mb-2">
             Scenario presets:
           </span>
@@ -137,18 +150,18 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
             <button
               type="button"
               onClick={() => handlePreset("normal_research")}
-              className={`px-3.5 py-1.5 rounded-full border text-xs transition-all ${
+              className={`px-3.5 py-1.5 rounded-full border text-xs whitespace-nowrap transition-all ${
                 selectedPreset === "normal_research"
                   ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
                   : "bg-canvas text-ink border-ink/20 hover:border-ink/50 font-medium"
               }`}
             >
-              Compliant read (Allow)
+              Standard research task (Allow)
             </button>
             <button
               type="button"
               onClick={() => handlePreset("scenario_a_payroll")}
-              className={`px-3.5 py-1.5 rounded-full border text-xs transition-all ${
+              className={`px-3.5 py-1.5 rounded-full border text-xs whitespace-nowrap transition-all ${
                 selectedPreset === "scenario_a_payroll"
                   ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
                   : "bg-canvas text-ink border-ink/20 hover:border-ink/50 font-medium"
@@ -159,7 +172,7 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
             <button
               type="button"
               onClick={() => handlePreset("scenario_b_injection")}
-              className={`px-3.5 py-1.5 rounded-full border text-xs transition-all ${
+              className={`px-3.5 py-1.5 rounded-full border text-xs whitespace-nowrap transition-all ${
                 selectedPreset === "scenario_b_injection"
                   ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
                   : "bg-canvas text-ink border-ink/20 hover:border-ink/50 font-medium"
@@ -170,7 +183,7 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
             <button
               type="button"
               onClick={() => handlePreset("scenario_hold_refund")}
-              className={`px-3.5 py-1.5 rounded-full border text-xs transition-all ${
+              className={`px-3.5 py-1.5 rounded-full border text-xs whitespace-nowrap transition-all ${
                 selectedPreset === "scenario_hold_refund"
                   ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
                   : "bg-canvas text-ink border-ink/20 hover:border-ink/50 font-medium"
@@ -265,7 +278,7 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
               className="rounded text-pinkPrimary focus:ring-pinkPrimary"
             />
             <label htmlFor="injection_toggle" className="text-ink text-xs cursor-pointer">
-              Simulate untrusted upstream document provenance (Indirect Prompt Injection Vector)
+              Simulate document with hidden malicious instructions
             </label>
           </div>
 
@@ -283,7 +296,7 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
               className="px-5 py-2 rounded-full bg-pinkPrimary text-white font-bold flex items-center gap-1.5 shadow-pink hover:bg-fuchsia active:translate-x-[1px] active:translate-y-[1px] transition-all disabled:opacity-50 text-xs"
             >
               <Send className="w-3.5 h-3.5 stroke-[2]" />
-              {loading ? "Evaluating..." : "Send to gateway proxy"}
+              {loading ? "Evaluating..." : "Run test"}
             </button>
           </div>
         </form>
@@ -326,6 +339,8 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
             {error}
           </div>
         )}
+        <div className="h-4" />
+        </div>
       </div>
     </div>
   );
