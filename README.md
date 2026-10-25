@@ -1,10 +1,13 @@
-# Sigil: Runtime Identity Drift Detection & Response for Autonomous AI Agents
+# Sigil (सिजिल)
 
-> ### **Authenticated isn't innocent.**
->
-> **Live Interactive Security Console:** [https://sigil-dun.vercel.app/](https://sigil-dun.vercel.app/)
+---
 
-A runtime security and governance proxy that intercepts autonomous AI agent tool calls outside the model's process space—continuously verifying that attempted actions remain strictly aligned with assigned role identity, active task intent, and authorized data boundaries before execution.
+### *Authenticated Isn't Innocent.*
+
+> **"Sigil"** — an inscribed mark or token possessing autonomous intent, power, and authority.  
+> In autonomous AI systems, an identity is not compromised when credentials break; it is compromised when an authenticated agent diverges from its bounded mandate. Sigil intercepts the tool call before the damage is executed.
+
+**Live Interactive Security Console:** [https://sigil-dun.vercel.app/](https://sigil-dun.vercel.app/)
 
 ---
 
@@ -24,19 +27,23 @@ flowchart LR
 
 ---
 
-## The Core Problem
+## The Autonomous Drift Problem
 
-Traditional access control makes a dangerous assumption: **if credentials are valid, the action is legitimate.**
+Traditional access control operates on a dangerous assumption: **if credentials authenticate cleanly, the attempted action must be legitimate.**
 
-In autonomous AI systems, this assumption fails catastrophically. Agent compromises almost never look like stolen tokens, broken handshakes, or brute-force logins. Instead, they manifest as **behavioral divergence with legitimate credentials**:
+In autonomous AI systems, this assumption fails catastrophically. Agent compromises almost never look like stolen tokens, broken handshakes, or brute-force logins. Instead, they manifest as **behavioral divergence under legitimate credentials**:
 
 * A **Customer Support Agent** authorized to check orders and issue refunds suddenly queries thousands of rows across unrelated enterprise accounts.
 * A **Research Assistant** reads an academic PDF containing indirect prompt injection instructing it to exfiltrate proprietary source summaries to a public webhook.
 * A **Finance Analyst** tasked with verifying cloud invoices attempts to access executive payroll tables simply because a shared file-reader tool technically can.
 
-In every case, the agent’s API key is valid. The session token is unexpired. The payload schema matches. **Authentication succeeds, but the action is catastrophic.**
+In autonomous agent architectures, security operators face three brutal realities:
 
-Static credentials grant an agent permission to touch a tool. They cannot determine whether invoking that tool makes sense for its *current task, at this moment, with this data, at this scale*.
+1. **The Credential Fallacy**: Authentication only proves *who* holds the key, not *what* they intend to do with it. An agent hijacked by indirect prompt injection or hallucination executes catastrophic API calls with legitimate OAuth tokens and clean schemas.
+2. **The Prompt-Guard Illusion**: Model-level guardrails and system prompts live in the generative context. They fail under indirect prompt injection, semantic obfuscation, and multi-agent delegation chains. You cannot reliably enforce API boundaries from inside the model.
+3. **The Post-Mortem Trap**: Classical anomaly detectors and SIEM dashboards log events asynchronously after execution. Once proprietary data is exfiltrated or an unauthorized wire is dispatched, an alert is an autopsy, not defense.
+
+**Sigil** is an out-of-process runtime security proxy placed between autonomous agents and protected tools. It intercepts tool invocations before execution, evaluating role boundaries, active task intent, historical trajectories, and input provenance to contain out-of-role actions before they execute.
 
 ---
 
@@ -209,7 +216,7 @@ Sigil was benchmarked against two standard production baselines across 13 reprod
 ## Assumptions & Design Choices
 
 1. **Tool Gateway Simulator:** An interactive gateway test console is built directly into the UI to simulate and inspect tool calls with arbitrary or preset payloads in real time.
-2. **UI Framework & Styling:** Built with Next.js 14, Tailwind CSS, and Lucide-react to render a high-density, accessible dark-mode security console.
+2. **UI Framework & Styling:** Built with Next.js 14, Tailwind CSS, and Lucide-react to render a high-density, accessible, clean light-themed enterprise security console.
 3. **Database Portability:** Implemented using SQLAlchemy with standard dual-dialect compatibility. Runs on local SQLite (`sqlite:///./sigil.db`) out-of-the-box and connects to hosted PostgreSQL in production via the `DATABASE_URL` environment variable.
 4. **Operator Key Security:** State-mutating administrative actions (`resolve approval`, `containment`, `policy update`, `seed`, `scenarios`, `evaluation`, and `gateway execution`) require an `OPERATOR_KEY`. In production mode or PostgreSQL deployments, the backend refuses to start without an explicit operator credential. In the frontend, the key is typed at runtime by the operator, stored exclusively in browser session memory (`sessionStorage`), and is never baked into frontend builds or public variables.
 5. **Statistical Confidence Derivation:** Alert confidence (0.65 to 0.98) is calculated dynamically from multi-signal corroboration: `Confidence = min(0.98, 0.65 + (0.08 * active_signals))`, reflecting agreement across policy, task, behavioral, impact, and provenance signals.

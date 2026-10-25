@@ -28,130 +28,152 @@ export default function Navbar({
     setClientOperatorKey(opKey);
     setShowKeyModal(false);
   };
+
   const navItems = [
     { id: "overview", label: "Overview", icon: Shield },
-    { id: "agents", label: "1. Agent Inventory", icon: Users },
-    { id: "activity", label: "2. Live Activity", icon: Activity },
-    { id: "alerts", label: "3. Drift Alerts", icon: AlertTriangle },
-    { id: "timeline", label: "4. Incident Timeline", icon: GitFork },
-    { id: "policies", label: "5. Policy Management", icon: BookOpen },
-    { id: "enforcement", label: "6. Enforcement Controls", icon: Lock },
-    { id: "evaluation", label: "7. Evaluation Panel", icon: BarChart3 },
+    { id: "agents", label: "Agent inventory", icon: Users },
+    { id: "activity", label: "Live activity", icon: Activity },
+    { id: "alerts", label: "Drift alerts", icon: AlertTriangle },
+    { id: "timeline", label: "Incident timeline", icon: GitFork },
+    { id: "policies", label: "Policy management", icon: BookOpen },
+    { id: "enforcement", label: "Enforcement controls", icon: Lock },
+    { id: "evaluation", label: "Evaluation panel", icon: BarChart3 },
   ];
 
   return (
-    <header className="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab("overview")}>
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-xl font-bold tracking-tight text-white">Sigil</span>
-                <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/50">
-                  Runtime Security Layer
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 -mt-0.5">Identity Drift Detection & Response for AI Agents</p>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={onOpenSimulate}
-              className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-cyan-600/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-600/30 transition shadow-sm"
-            >
-              <Send className="w-3.5 h-3.5 mr-1.5" />
-              Gateway Simulator
-            </button>
-            <button
-              onClick={onRunScenarios}
-              disabled={loading}
-              className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-600/30 transition shadow-sm disabled:opacity-50"
-            >
-              <Play className="w-3.5 h-3.5 mr-1.5" />
-              Run All Scenarios
-            </button>
-            <button
-              onClick={() => setShowKeyModal(true)}
-              className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded-md bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition"
-              title="Operator Authentication Key"
-            >
-              <Key className="w-3.5 h-3.5 mr-1 text-amber-400" />
-              Operator Key
-            </button>
-            <button
-              onClick={onResetSeed}
-              disabled={loading}
-              className="inline-flex items-center p-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"
-              title="Reset & Seed Baseline Registry"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-cyan-400" : ""}`} />
-            </button>
+    <div className="w-full pt-4 pb-2">
+      {/* Top Header Area */}
+      <div className="w-full pb-6 border-b border-ink/15">
+        {/* Sigil moved to the left (where lower cards begin), more slanted & tilted (-rotate-6), slow staggered sequential dots on hover */}
+        <div className="w-full flex items-start justify-start pl-1 sm:pl-2 pt-2">
+          <div
+            className="group inline-flex items-baseline cursor-pointer select-none"
+            onClick={() => setActiveTab("overview")}
+            title="Sigil home"
+          >
+            <span className="font-serif italic font-bold text-7xl sm:text-8xl md:text-9xl text-pinkPrimary tracking-tight lowercase inline-block transform -rotate-6 origin-bottom-left transition-colors">
+              sigil
+              <span className="inline-block font-serif font-bold italic ml-0.5">
+                <span className="dot-1 inline-block">.</span>
+                <span className="dot-2 inline-block">.</span>
+                <span className="dot-3 inline-block">.</span>
+              </span>
+            </span>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <nav className="flex space-x-1 overflow-x-auto py-2 scrollbar-none border-t border-slate-800/50">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-all ${
-                  isActive
-                    ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-sm"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-cyan-400" : "text-slate-500"}`} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+        {/* Identity drift line: stays centered, with increased gap and increased line-spacing */}
+        <div className="mt-8 sm:mt-10 text-center">
+          <p className="text-xs sm:text-sm font-sans text-inkMuted tracking-wide leading-relaxed max-w-xl mx-auto">
+            Identity drift detection and response layer for autonomous agents
+          </p>
+
+          {/* Action Controls: Pill-shaped, tactile, centered row */}
+          <div className="flex items-center justify-center gap-2.5 flex-wrap mt-5">
+            <button
+              onClick={onOpenSimulate}
+              className="inline-flex items-center px-4 py-2 text-xs font-sans font-medium rounded-full bg-paper text-ink border-1.5 border-ink/80 shadow-ink-sm hover:shadow-ink hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+              style={{ borderWidth: "1.5px" }}
+            >
+              <Send className="w-3.5 h-3.5 mr-1.5 text-pinkPrimary stroke-[2]" />
+              Gateway simulator
+            </button>
+
+            <button
+              onClick={onRunScenarios}
+              disabled={loading}
+              className="inline-flex items-center px-4 py-2 text-xs font-sans font-bold rounded-full bg-pinkPrimary text-white border-1.5 border-ink shadow-pink hover:bg-fuchsia hover:shadow-pink-lg hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all disabled:opacity-50"
+              style={{ borderWidth: "1.5px" }}
+            >
+              <Play className="w-3.5 h-3.5 mr-1.5 fill-white stroke-[2]" />
+              Run scenarios
+            </button>
+
+            <button
+              onClick={() => setShowKeyModal(true)}
+              className="inline-flex items-center px-3.5 py-2 text-xs font-sans rounded-full bg-paper text-ink border-1.5 border-ink/80 shadow-ink-sm hover:shadow-ink hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+              style={{ borderWidth: "1.5px" }}
+              title="Operator authentication key"
+            >
+              <Key className="w-3.5 h-3.5 mr-1.5 text-inkMuted stroke-[2]" />
+              Operator key
+            </button>
+
+            <button
+              onClick={onResetSeed}
+              disabled={loading}
+              className="inline-flex items-center p-2 rounded-full bg-paper text-ink border-1.5 border-ink/80 shadow-ink-sm hover:shadow-ink hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+              style={{ borderWidth: "1.5px" }}
+              title="Reset baseline registry"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-ink stroke-[2] ${loading ? "animate-spin text-pinkPrimary" : ""}`} />
+            </button>
+          </div>
+        </div>
       </div>
 
+      {/* Segmented Pill Tabs Navigation (Seamless on page, centered) */}
+      <nav className="flex items-center justify-start md:justify-center space-x-2 overflow-x-auto py-4 scrollbar-none">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-sans whitespace-nowrap transition-all border ${
+                isActive
+                  ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
+                  : "bg-paper/80 text-ink/80 border-ink/20 hover:border-ink/50 hover:bg-paper font-medium"
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 stroke-[2] ${isActive ? "text-white" : "text-inkMuted"}`} />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Operator Key Modal */}
       {showKeyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-sm w-full p-5 space-y-3 shadow-xl">
-            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-              <Key className="w-4 h-4 text-amber-400" />
-              Operator Security Authentication
-            </h3>
-            <p className="text-xs text-slate-400">
-              Control actions (Approve, Deny, Isolate, Policy Edit, Seed) require an operator key. Visitors without the key have read-only access.
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs">
+          <div className="bg-paper border-1.5 border-ink rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-pink-lg" style={{ borderWidth: "1.5px" }}>
+            <div className="flex items-center justify-between border-b border-ink/15 pb-2.5">
+              <h3 className="text-sm font-serif font-bold text-ink flex items-center gap-2">
+                <Key className="w-4 h-4 text-pinkPrimary stroke-[2]" />
+                Operator authentication
+              </h3>
+              <span className="text-[10px] font-sans border border-ink/30 px-2.5 py-0.5 rounded-full bg-canvas text-inkMuted font-medium">
+                Protected
+              </span>
+            </div>
+            <p className="text-xs text-inkMuted leading-relaxed font-sans">
+              Mutations (approvals, pauses, isolations, policy updates, scenario benchmarks) require an operator secret. Observers browse in read-only mode.
             </p>
             <input
               type="password"
               value={opKey}
               onChange={(e) => setOpKey(e.target.value)}
-              placeholder="Enter operator key..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+              placeholder="Paste operator secret key..."
+              className="w-full bg-canvas border border-ink/40 rounded-full px-4 py-2 text-xs text-ink focus:outline-none focus:border-pinkPrimary focus:bg-paper font-sans"
             />
-            <div className="flex justify-end gap-2 pt-1">
+            <div className="flex justify-end gap-2 pt-1 font-sans">
               <button
                 onClick={() => setShowKeyModal(false)}
-                className="px-3 py-1.5 rounded bg-slate-800 text-xs text-slate-300"
+                className="px-4 py-1.5 rounded-full bg-canvas border border-ink/30 text-xs font-medium text-ink hover:bg-paper transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveKey}
-                className="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-xs text-white font-bold"
+                className="px-4 py-1.5 rounded-full bg-pinkPrimary text-white text-xs font-bold hover:bg-fuchsia shadow-sm transition-colors"
               >
-                Save Key
+                Save key
               </button>
             </div>
           </div>
         </div>
       )}
-    </header>
+    </div>
   );
 }

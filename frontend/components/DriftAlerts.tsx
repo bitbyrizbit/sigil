@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { AlertTriangle, CheckCircle, ShieldAlert, Sparkles, Filter, Check, ArrowRight, Eye } from "lucide-react";
+import { AlertTriangle, CheckCircle, Check, Sparkles } from "lucide-react";
+import { DecisionStamp, SignalBar } from "./Stamp";
 
 interface DriftAlertsProps {
   alerts: any[];
@@ -11,7 +12,6 @@ interface DriftAlertsProps {
 export default function DriftAlerts({ alerts, onResolveAlert }: DriftAlertsProps) {
   const [filterSeverity, setFilterSeverity] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
-  const [selectedAlert, setSelectedAlert] = useState<any | null>(null);
 
   const filtered = alerts.filter((a) => {
     const matchesSev = filterSeverity === "ALL" || a.severity === filterSeverity;
@@ -20,54 +20,64 @@ export default function DriftAlerts({ alerts, onResolveAlert }: DriftAlertsProps
   });
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-ink/15 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-rose-400" />
-            Screen 3: Explainable Drift Alerts (USP 2)
+          <h2 className="text-2xl font-serif font-bold text-ink flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-pinkPrimary stroke-[2]" />
+            Evidence-backed drift alerts
           </h2>
-          <p className="text-xs text-slate-400">
-            Every alert explains what changed, why it matters, and which observed events support it—avoiding bare anomaly scores.
+          <p className="text-xs text-inkMuted font-sans mt-0.5">
+            Every incident provides full contextual explanations and supporting telemetry—no opaque anomaly scores
           </p>
         </div>
-        <div className="text-xs text-slate-400 font-mono">
-          Open Incidents: <strong className="text-rose-400">{alerts.filter(a => a.status === "OPEN").length}</strong>
+        <div className="text-xs font-sans text-ink">
+          Open incidents: <strong className="font-num font-bold tabular-nums text-pinkPrimary">{alerts.filter(a => a.status === "OPEN").length}</strong>
         </div>
       </div>
 
-      {/* Filter Chips */}
-      <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex items-center gap-1 text-xs">
-          <span className="text-slate-500 mr-1">Severity:</span>
-          {["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"].map((sev) => (
+      {/* Filter Chips: Rounded-full pills */}
+      <div className="p-4 bg-paper border-1.5 border-ink/80 rounded-3xl shadow-ink-sm flex flex-wrap gap-3 items-center justify-between font-sans text-xs" style={{ borderWidth: "1.5px" }}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-inkMuted mr-1">Severity:</span>
+          {[
+            { id: "ALL", label: "All" },
+            { id: "CRITICAL", label: "Critical" },
+            { id: "HIGH", label: "High" },
+            { id: "MEDIUM", label: "Medium" },
+            { id: "LOW", label: "Low" },
+          ].map((item) => (
             <button
-              key={sev}
-              onClick={() => setFilterSeverity(sev)}
-              className={`px-2 py-0.5 rounded text-xs font-medium transition ${
-                filterSeverity === sev
-                  ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
-                  : "bg-slate-800 text-slate-400 hover:text-white"
+              key={item.id}
+              onClick={() => setFilterSeverity(item.id)}
+              className={`px-3 py-1 rounded-full text-xs transition-all border ${
+                filterSeverity === item.id
+                  ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
+                  : "bg-paper text-ink border-ink/20 hover:border-ink/50"
               }`}
             >
-              {sev}
+              {item.label}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-1 text-xs">
-          <span className="text-slate-500 mr-1">Status:</span>
-          {["ALL", "OPEN", "RESOLVED"].map((st) => (
+        <div className="flex items-center gap-2">
+          <span className="text-inkMuted mr-1">Status:</span>
+          {[
+            { id: "ALL", label: "All" },
+            { id: "OPEN", label: "Open" },
+            { id: "RESOLVED", label: "Resolved" },
+          ].map((item) => (
             <button
-              key={st}
-              onClick={() => setFilterStatus(st)}
-              className={`px-2 py-0.5 rounded text-xs font-medium transition ${
-                filterStatus === st
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                  : "bg-slate-800 text-slate-400 hover:text-white"
+              key={item.id}
+              onClick={() => setFilterStatus(item.id)}
+              className={`px-3 py-1 rounded-full text-xs transition-all border ${
+                filterStatus === item.id
+                  ? "bg-ink text-white font-bold border-ink shadow-ink-sm"
+                  : "bg-paper text-ink border-ink/20 hover:border-ink/50"
               }`}
             >
-              {st}
+              {item.label}
             </button>
           ))}
         </div>
@@ -76,8 +86,8 @@ export default function DriftAlerts({ alerts, onResolveAlert }: DriftAlertsProps
       {/* Alerts Cards List */}
       <div className="space-y-4">
         {filtered.length === 0 ? (
-          <div className="text-center py-12 rounded-xl border border-slate-800 bg-slate-900/40 text-slate-500 text-sm">
-            No alerts matching the selected filters.
+          <div className="text-center py-12 bg-paper border-1.5 border-ink/40 rounded-3xl shadow-sm text-inkMuted text-xs font-sans">
+            No alerts matching current filters.
           </div>
         ) : (
           filtered.map((alert) => {
@@ -88,77 +98,81 @@ export default function DriftAlerts({ alerts, onResolveAlert }: DriftAlertsProps
             return (
               <div
                 key={alert.alert_id}
-                className={`p-5 rounded-xl border transition ${
-                  isOpen
-                    ? isCritical
-                      ? "border-rose-700/80 bg-rose-950/20 shadow-lg shadow-rose-950/30"
-                      : isHigh
-                      ? "border-amber-700/60 bg-amber-950/10"
-                      : "border-slate-800 bg-slate-900/60"
-                    : "border-slate-800/60 bg-slate-900/30 opacity-75"
+                className={`p-6 bg-paper border-1.5 border-ink/80 rounded-3xl shadow-ink transition-all ${
+                  !isOpen ? "opacity-75" : ""
                 }`}
+                style={{ borderWidth: "1.5px" }}
               >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-ink/10 pb-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider ${
+                        className={`px-3 py-0.5 rounded-full border-1.5 border-ink font-sans text-[11px] font-bold shadow-ink-sm ${
                           isCritical
-                            ? "bg-rose-900 text-rose-200 border border-rose-600"
+                            ? "bg-pinkPrimary text-white"
                             : isHigh
-                            ? "bg-amber-900/80 text-amber-200 border border-amber-600"
-                            : "bg-slate-800 text-slate-300"
+                            ? "bg-fuchsia text-white"
+                            : "bg-hold text-ink"
                         }`}
+                        style={{ borderWidth: "1.5px" }}
                       >
-                        {alert.severity} Risk
+                        {alert.severity === "CRITICAL" ? "Critical risk" : alert.severity === "HIGH" ? "High risk" : alert.severity === "MEDIUM" ? "Medium risk" : "Low risk"}
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase bg-slate-800 text-slate-300 border border-slate-700">
+                      <span className="px-2.5 py-0.5 rounded-full border border-ink/20 bg-canvas text-ink font-sans text-[11px]">
                         Policy: {alert.policy_status || "prohibited"}
                       </span>
-                      <span className="text-xs text-slate-400 font-mono">{alert.alert_id}</span>
-                      <span className="text-xs text-slate-500">•</span>
-                      <span className="text-xs text-slate-400 font-mono">
-                        {alert.created_at ? new Date(alert.created_at).toLocaleString() : ""}
+                      <span className="text-xs font-num text-inkMuted">{alert.alert_id}</span>
+                      <span className="text-xs font-num text-inkMuted tabular-nums">
+                        {alert.created_at ? new Date(alert.created_at).toLocaleTimeString() : ""}
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-white mt-1.5 flex items-center gap-2">
+                    <h3 className="text-base font-serif font-bold text-ink mt-1.5 flex items-center gap-2">
                       <span>{alert.agent_name}</span>
-                      <span className="text-xs font-normal text-slate-400">({alert.role})</span>
+                      <span className="text-xs font-sans font-normal text-inkMuted">({alert.role})</span>
                     </h3>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  {/* Stamp & Large Tactical Risk Score */}
+                  <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <div className="text-xs text-slate-400">Risk Score</div>
-                      <div className="text-xl font-black text-rose-400 font-mono">{alert.risk_score} <span className="text-xs text-slate-500 font-normal">/ 100</span></div>
+                      <span className="text-[10px] font-sans text-inkMuted uppercase block font-semibold">Risk score</span>
+                      <div className="text-2xl font-num font-bold text-fuchsia tabular-nums">
+                        {alert.risk_score}
+                        <span className="text-xs text-inkMuted font-normal"> / 100</span>
+                      </div>
                     </div>
-                    <div className="text-right pl-3 border-l border-slate-800">
-                      <div className="text-xs text-slate-400">Confidence</div>
-                      <div className="text-xl font-bold text-cyan-400 font-mono">{Math.round(alert.confidence * 100)}%</div>
+                    <div className="text-right pl-3 border-l border-ink/15">
+                      <span className="text-[10px] font-sans text-inkMuted uppercase block font-semibold">Certainty</span>
+                      <div className="text-2xl font-num font-bold text-ink tabular-nums">
+                        {Math.round(alert.confidence * 100)}%
+                      </div>
+                    </div>
+                    <div className="pl-2">
+                      <DecisionStamp decision={alert.enforced_response} size="md" />
                     </div>
                   </div>
                 </div>
 
-                {/* Evidence-Backed Explanation (USP 2 Core) */}
-                <div className="mt-3.5 p-3.5 rounded-lg bg-slate-950/80 border border-slate-800/80">
-                  <span className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5 mb-1">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Structured Evidence Explanation
-                  </span>
-                  <p className="text-xs text-slate-200 leading-relaxed font-sans">{alert.explanation}</p>
+                {/* Evidence Explanation Card */}
+                <div className="mt-4 p-4 bg-canvas/40 border border-ink/15 rounded-2xl space-y-1">
+                  <div className="flex items-center gap-1.5 text-pinkPrimary font-sans text-xs font-bold">
+                    <Sparkles className="w-3.5 h-3.5 stroke-[2]" />
+                    <span>Evidence-backed causal explanation</span>
+                  </div>
+                  <p className="text-xs text-ink leading-relaxed font-sans">{alert.explanation}</p>
                 </div>
 
-                {/* Supporting Observed Evidence Points */}
+                {/* Supporting Observed Signals */}
                 {alert.evidence && alert.evidence.length > 0 && (
-                  <div className="mt-3">
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
-                      Observed Supporting Signals:
+                  <div className="mt-4">
+                    <span className="text-[11px] font-sans font-bold text-inkMuted block mb-1.5">
+                      Observed telemetry corroboration:
                     </span>
-                    <ul className="space-y-1">
+                    <ul className="space-y-1 font-sans">
                       {alert.evidence.map((ev: string, idx: number) => (
-                        <li key={idx} className="text-xs text-slate-300 flex items-start gap-1.5 font-mono">
-                          <span className="text-rose-400 mt-0.5">•</span>
+                        <li key={idx} className="text-xs text-ink/80 flex items-start gap-2">
+                          <span className="text-pinkPrimary font-bold">»</span>
                           <span>{ev}</span>
                         </li>
                       ))}
@@ -166,39 +180,37 @@ export default function DriftAlerts({ alerts, onResolveAlert }: DriftAlertsProps
                   </div>
                 )}
 
-                {/* Multi-Signal Breakdown (P, T, B, I, C) */}
+                {/* Multi-Signal Breakdown (P, T, B, I, C) as Ledger Bars */}
                 {alert.signals && (
-                  <div className="mt-3 pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-4 text-xs font-mono">
-                    <span className="text-slate-500 font-sans text-[11px]">Signals:</span>
-                    <span className="text-slate-300">P (Policy): <strong className="text-rose-400">{alert.signals.P}</strong></span>
-                    <span className="text-slate-300">T (Task): <strong className="text-amber-400">{alert.signals.T}</strong></span>
-                    <span className="text-slate-300">B (Behavior): <strong className="text-cyan-400">{alert.signals.B}</strong></span>
-                    <span className="text-slate-300">I (Impact): <strong className="text-purple-400">{alert.signals.I}</strong></span>
-                    <span className="text-slate-300">C (Context): <strong className="text-indigo-400">{alert.signals.C}</strong></span>
+                  <div className="mt-4 pt-3.5 border-t border-ink/10 flex flex-wrap items-center gap-4 font-sans">
+                    <span className="text-[11px] text-inkMuted font-bold">Signal breakdown:</span>
+                    <SignalBar label="P" value={alert.signals.P} />
+                    <SignalBar label="T" value={alert.signals.T} />
+                    <SignalBar label="B" value={alert.signals.B} />
+                    <SignalBar label="I" value={alert.signals.I} />
+                    <SignalBar label="C" value={alert.signals.C} />
                   </div>
                 )}
 
                 {/* Actions Footer */}
-                <div className="mt-4 pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500">Enforcement Action:</span>
-                    <span className="font-bold text-white px-2 py-0.5 rounded bg-slate-800 font-mono">
-                      {alert.enforced_response}
-                    </span>
+                <div className="mt-4 pt-3.5 border-t border-ink/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans">
+                  <div className="text-inkMuted">
+                    Target resource: <strong className="text-ink">{alert.target_resource || "External tool boundary"}</strong>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div>
                     {isOpen ? (
                       <button
                         onClick={() => onResolveAlert(alert.alert_id, "RESOLVED")}
-                        className="px-3 py-1.5 rounded-md text-xs font-semibold bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/30 transition flex items-center gap-1.5"
+                        className="px-4 py-1.5 rounded-full bg-paper border-1.5 border-ink text-ink font-semibold hover:bg-allow hover:text-white hover:border-ink shadow-ink-sm transition-all flex items-center gap-1.5"
+                        style={{ borderWidth: "1.5px" }}
                       >
-                        <Check className="w-3.5 h-3.5" />
-                        Acknowledge & Resolve Incident
+                        <Check className="w-3.5 h-3.5 stroke-[2]" />
+                        Acknowledge &amp; clear incident
                       </button>
                     ) : (
-                      <span className="text-xs text-emerald-400 font-medium flex items-center gap-1">
-                        <CheckCircle className="w-3.5 h-3.5" /> Incident Resolved
+                      <span className="text-xs font-sans text-allow font-bold flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5 stroke-[2]" /> Incident resolved
                       </span>
                     )}
                   </div>

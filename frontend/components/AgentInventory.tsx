@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Users, Shield, Check, X, ShieldAlert, AlertTriangle, Key, Calendar, Tag } from "lucide-react";
+import { Users, Shield, X } from "lucide-react";
 
 interface AgentInventoryProps {
   agents: any[];
@@ -14,32 +14,52 @@ export default function AgentInventory({ agents, onUpdateStatus }: AgentInventor
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">Active</span>;
+        return (
+          <span className="px-3 py-1 rounded-full border-1.5 border-ink bg-allow text-white font-sans text-[11px] font-bold shadow-ink-sm" style={{ borderWidth: "1.5px" }}>
+            Active
+          </span>
+        );
       case "paused":
-        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-950/60 text-amber-400 border border-amber-800/40">Paused</span>;
+        return (
+          <span className="px-3 py-1 rounded-full border-1.5 border-ink bg-hold text-ink font-sans text-[11px] font-bold shadow-ink-sm" style={{ borderWidth: "1.5px" }}>
+            Paused
+          </span>
+        );
       case "restricted":
-        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-orange-950/60 text-orange-400 border border-orange-800/40">Restricted</span>;
+        return (
+          <span className="px-3 py-1 rounded-full border-1.5 border-ink bg-hold text-ink font-sans text-[11px] font-bold shadow-ink-sm" style={{ borderWidth: "1.5px" }}>
+            Restricted
+          </span>
+        );
       case "isolated":
-        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-950/60 text-rose-400 border border-rose-800/40">Isolated</span>;
+        return (
+          <span className="px-3 py-1 rounded-full border-1.5 border-ink bg-pinkPrimary text-white font-sans text-[11px] font-bold shadow-pink" style={{ borderWidth: "1.5px" }}>
+            Isolated
+          </span>
+        );
       default:
-        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-300">{status}</span>;
+        return (
+          <span className="px-3 py-1 rounded-full border-1.5 border-ink/40 bg-canvas text-ink font-sans text-[11px] font-medium" style={{ borderWidth: "1.5px" }}>
+            {status}
+          </span>
+        );
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-ink/15 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Users className="w-5 h-5 text-cyan-400" />
-            Screen 1: Agent Identity & Role Registry
+          <h2 className="text-2xl font-serif font-bold text-ink flex items-center gap-2">
+            <Users className="w-5 h-5 text-pinkPrimary stroke-[2]" />
+            Agent identity &amp; role registry
           </h2>
-          <p className="text-xs text-slate-400">
-            Baseline expected identities, scoped tools, data boundaries, and risk profiles before runtime observation.
+          <p className="text-xs text-inkMuted font-sans mt-0.5">
+            Registered baseline expected identities, permitted tool whitelists, and bounded data scopes
           </p>
         </div>
-        <div className="text-xs text-slate-400 font-mono">
-          Total Registered: <strong className="text-cyan-400">{agents.length}</strong>
+        <div className="text-xs font-sans text-ink">
+          Total registered: <strong className="font-num font-bold tabular-nums text-pinkPrimary">{agents.length} agents</strong>
         </div>
       </div>
 
@@ -50,55 +70,59 @@ export default function AgentInventory({ agents, onUpdateStatus }: AgentInventor
             <div
               key={agent.agent_id}
               onClick={() => setSelectedAgent(agent)}
-              className={`p-5 rounded-xl border bg-slate-900/60 transition cursor-pointer flex flex-col justify-between ${
+              className={`p-6 bg-paper border-1.5 border-ink/80 rounded-3xl transition-all cursor-pointer flex flex-col justify-between ${
                 isSelected
-                  ? "border-cyan-500 shadow-lg shadow-cyan-500/10 bg-slate-900"
-                  : "border-slate-800 hover:border-slate-700 hover:bg-slate-900/80"
+                  ? "shadow-pink ring-2 ring-pinkPrimary translate-x-[-1px] translate-y-[-1px]"
+                  : "shadow-ink-sm hover:shadow-ink hover:translate-x-[-1px] hover:translate-y-[-1px]"
               }`}
+              style={{ borderWidth: "1.5px" }}
             >
               <div>
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between border-b border-ink/10 pb-3">
                   <div>
-                    <h3 className="font-bold text-white text-base">{agent.name}</h3>
-                    <span className="text-xs font-mono text-cyan-400 block">{agent.agent_id}</span>
+                    <h3 className="font-serif font-bold text-ink text-base">{agent.name}</h3>
+                    <span className="text-xs font-sans text-inkMuted block mt-0.5">{agent.agent_id}</span>
                   </div>
                   {getStatusBadge(agent.status)}
                 </div>
 
-                <div className="mt-3 space-y-1.5 text-xs">
-                  <div className="flex items-center text-slate-300">
-                    <span className="text-slate-500 w-24">Role:</span>
-                    <strong className="text-slate-200">{agent.role}</strong>
+                <div className="mt-4 space-y-2 text-xs font-sans text-ink">
+                  <div className="flex items-center">
+                    <span className="text-inkMuted w-24">Role:</span>
+                    <strong className="text-ink font-semibold">{agent.role}</strong>
                   </div>
-                  <div className="flex items-center text-slate-300">
-                    <span className="text-slate-500 w-24">Department:</span>
+                  <div className="flex items-center">
+                    <span className="text-inkMuted w-24">Department:</span>
                     <span>{agent.owner}</span>
                   </div>
-                  <div className="flex items-center text-slate-300">
-                    <span className="text-slate-500 w-24">Policy Version:</span>
-                    <span className="font-mono text-cyan-300">v{agent.policy_version}</span>
+                  <div className="flex items-center">
+                    <span className="text-inkMuted w-24">Policy version:</span>
+                    <span className="font-num font-bold tabular-nums">v{agent.policy_version}</span>
                   </div>
-                  <div className="flex items-center text-slate-300">
-                    <span className="text-slate-500 w-24">Review Date:</span>
-                    <span className="font-mono text-slate-400">{agent.expiry_or_review_date}</span>
+                  <div className="flex items-center">
+                    <span className="text-inkMuted w-24">Review date:</span>
+                    <span className="font-num tabular-nums">{agent.expiry_or_review_date}</span>
                   </div>
                 </div>
 
-                <div className="mt-3.5 pt-3 border-t border-slate-800 text-xs">
-                  <p className="text-slate-400 line-clamp-2">
-                    <strong className="text-slate-300 font-medium">Purpose: </strong>
+                <div className="mt-4 pt-3 border-t border-ink/10 text-xs font-sans">
+                  <p className="text-ink/80 line-clamp-2">
+                    <strong className="text-ink font-semibold">Purpose: </strong>
                     {agent.purpose}
                   </p>
                 </div>
 
-                {/* Scoped Tools Pills */}
-                <div className="mt-3">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                    Permitted Tools Whitelist
+                {/* Scoped Tools Whitelist */}
+                <div className="mt-4">
+                  <span className="text-[11px] font-sans font-bold text-inkMuted block mb-1.5">
+                    Authorized tools
                   </span>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1.5">
                     {(agent.allowed_tools || []).map((tool: string) => (
-                      <span key={tool} className="px-1.5 py-0.5 rounded bg-slate-800/80 text-emerald-400 font-mono text-[10px] border border-emerald-950">
+                      <span
+                        key={tool}
+                        className="px-2.5 py-0.5 rounded-full border border-ink/20 bg-canvas text-ink font-sans text-[11px]"
+                      >
                         {tool}
                       </span>
                     ))}
@@ -107,16 +131,17 @@ export default function AgentInventory({ agents, onUpdateStatus }: AgentInventor
               </div>
 
               {/* Quick Containment Controls */}
-              <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs">
-                <span className="text-slate-500 text-[11px]">Security State</span>
-                <div className="flex gap-1.5">
+              <div className="mt-5 pt-3.5 border-t border-ink/10 flex items-center justify-between text-xs font-sans">
+                <span className="text-inkMuted text-[11px]">Enforcement</span>
+                <div className="flex gap-2">
                   {agent.status === "active" ? (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onUpdateStatus(agent.agent_id, "PAUSE");
                       }}
-                      className="px-2 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-800/40 hover:bg-amber-900/40 text-[11px]"
+                      className="px-3 py-1 rounded-full border-1.5 border-ink bg-paper text-ink text-xs font-semibold hover:bg-hold hover:border-ink shadow-ink-sm transition-all"
+                      style={{ borderWidth: "1.5px" }}
                     >
                       Pause
                     </button>
@@ -126,7 +151,8 @@ export default function AgentInventory({ agents, onUpdateStatus }: AgentInventor
                         e.stopPropagation();
                         onUpdateStatus(agent.agent_id, "RESUME");
                       }}
-                      className="px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-800/40 hover:bg-emerald-900/40 text-[11px]"
+                      className="px-3 py-1 rounded-full border-1.5 border-ink bg-paper text-ink text-xs font-semibold hover:bg-allow hover:text-white hover:border-ink shadow-ink-sm transition-all"
+                      style={{ borderWidth: "1.5px" }}
                     >
                       Resume
                     </button>
@@ -137,7 +163,8 @@ export default function AgentInventory({ agents, onUpdateStatus }: AgentInventor
                         e.stopPropagation();
                         onUpdateStatus(agent.agent_id, "ISOLATE");
                       }}
-                      className="px-2 py-0.5 rounded bg-rose-950/40 text-rose-300 border border-rose-800/40 hover:bg-rose-900/40 text-[11px]"
+                      className="px-3 py-1 rounded-full border-1.5 border-pinkPrimary bg-paper text-pinkPrimary text-xs font-bold hover:bg-pinkPrimary hover:text-white shadow-pink transition-all"
+                      style={{ borderWidth: "1.5px" }}
                     >
                       Isolate
                     </button>
@@ -149,41 +176,45 @@ export default function AgentInventory({ agents, onUpdateStatus }: AgentInventor
         })}
       </div>
 
-      {/* Selected Agent Deep Detail Drawer / Modal */}
+      {/* Selected Agent Deep Detail Drawer */}
       {selectedAgent && (
-        <div className="p-5 rounded-xl border border-cyan-800/60 bg-slate-900/90 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="p-7 bg-paper border-1.5 border-ink/80 rounded-3xl shadow-ink space-y-4" style={{ borderWidth: "1.5px" }}>
+          <div className="flex items-center justify-between border-b border-ink/15 pb-3">
             <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Shield className="w-5 h-5 text-cyan-400" />
-                Detailed Policy Profile: {selectedAgent.name} ({selectedAgent.agent_id})
+              <h3 className="text-lg font-serif font-bold text-ink flex items-center gap-2">
+                <Shield className="w-5 h-5 text-pinkPrimary stroke-[2]" />
+                Identity card: {selectedAgent.name} ({selectedAgent.agent_id})
               </h3>
-              <p className="text-xs text-slate-400">All registered registry fields from Module 1 specification</p>
+              <p className="text-xs text-inkMuted font-sans mt-0.5">
+                Full registry definition and runtime authorization parameters
+              </p>
             </div>
             <button
               onClick={() => setSelectedAgent(null)}
-              className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-800"
+              className="p-1.5 rounded-full border border-ink/30 bg-canvas text-ink hover:bg-paper transition-colors"
             >
-              Close
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-            <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 space-y-2">
-              <span className="text-[11px] font-bold text-cyan-400 font-sans uppercase">Scope & Boundaries</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
+            <div className="p-5 bg-canvas/40 border border-ink/15 rounded-2xl space-y-3">
+              <span className="text-[11px] font-bold text-ink block border-b border-ink/10 pb-1.5">
+                Authorized boundaries
+              </span>
               <div>
-                <span className="text-slate-500 block">Active Task Scope:</span>
-                <span className="text-slate-200">{selectedAgent.task_scope}</span>
+                <span className="text-inkMuted block text-[11px]">Task scope:</span>
+                <span className="text-ink font-sans">{selectedAgent.task_scope}</span>
               </div>
               <div>
-                <span className="text-slate-500 block">Risk Profile:</span>
-                <span className="text-amber-300 font-semibold">{selectedAgent.risk_profile}</span>
+                <span className="text-inkMuted block text-[11px]">Risk profile:</span>
+                <span className="text-ink font-semibold">{selectedAgent.risk_profile}</span>
               </div>
               <div>
-                <span className="text-slate-500 block">Authorized Data Scope:</span>
-                <div className="flex flex-wrap gap-1 mt-1">
+                <span className="text-inkMuted block text-[11px]">Authorized data scope:</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {(selectedAgent.data_scope || []).map((ds: string) => (
-                    <span key={ds} className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                    <span key={ds} className="px-2 py-0.5 rounded-full border border-ink/20 bg-paper text-ink text-[11px]">
                       {ds}
                     </span>
                   ))}
@@ -191,23 +222,25 @@ export default function AgentInventory({ agents, onUpdateStatus }: AgentInventor
               </div>
             </div>
 
-            <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 space-y-2">
-              <span className="text-[11px] font-bold text-rose-400 font-sans uppercase">Strict Prohibitions</span>
+            <div className="p-5 bg-canvas/40 border border-pinkPrimary/20 rounded-2xl space-y-3">
+              <span className="text-[11px] font-bold text-pinkPrimary block border-b border-pinkPrimary/20 pb-1.5">
+                Hard boundary prohibitions
+              </span>
               <div>
-                <span className="text-slate-500 block">Restricted Tools:</span>
-                <div className="flex flex-wrap gap-1 mt-1">
+                <span className="text-inkMuted block text-[11px]">Restricted tools:</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {(selectedAgent.restricted_tools || []).map((rt: string) => (
-                    <span key={rt} className="px-1.5 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-900/60">
+                    <span key={rt} className="px-2 py-0.5 rounded-full border border-pinkPrimary/40 bg-paper text-pinkPrimary font-semibold text-[11px]">
                       {rt}
                     </span>
                   ))}
                 </div>
               </div>
               <div>
-                <span className="text-slate-500 block">Restricted Operations:</span>
-                <div className="flex flex-wrap gap-1 mt-1">
+                <span className="text-inkMuted block text-[11px]">Restricted operations:</span>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {(selectedAgent.restricted_actions || []).map((ra: string) => (
-                    <span key={ra} className="px-1.5 py-0.5 rounded bg-rose-950/60 text-rose-300 border border-rose-900/60">
+                    <span key={ra} className="px-2 py-0.5 rounded-full border border-pinkPrimary/40 bg-paper text-pinkPrimary font-semibold text-[11px]">
                       {ra}
                     </span>
                   ))}

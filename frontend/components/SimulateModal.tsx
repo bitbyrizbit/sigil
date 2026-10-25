@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Send, Sparkles, CheckCircle2, XCircle, AlertCircle, Shield } from "lucide-react";
+import { X, Send, Shield } from "lucide-react";
 import { executeGateway } from "../lib/api";
+import { DecisionStamp } from "./Stamp";
 
 interface SimulateModalProps {
   isOpen: boolean;
@@ -103,71 +104,74 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs">
+      <div
+        className="bg-paper border-1.5 border-ink/80 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-7 shadow-pink-lg relative font-sans"
+        style={{ borderWidth: "1.5px" }}
+      >
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-slate-400 hover:text-white p-1 rounded-lg bg-slate-800/60"
+          className="absolute right-5 top-5 text-inkMuted hover:text-ink p-1.5 rounded-full border border-ink/20 bg-canvas transition-colors"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 stroke-[2]" />
         </button>
 
-        <div className="flex items-center gap-2 mb-2">
-          <div className="p-2 rounded-lg bg-cyan-950 text-cyan-400 border border-cyan-800">
-            <Shield className="w-5 h-5" />
+        <div className="flex items-center gap-3 mb-4 border-b border-ink/10 pb-3.5">
+          <div className="w-9 h-9 rounded-full bg-pinkPrimary/10 border border-pinkPrimary/30 flex items-center justify-center">
+            <Shield className="w-4 h-4 text-pinkPrimary stroke-[2]" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Live Tool Gateway Interceptor</h3>
-            <p className="text-xs text-slate-400">Dispatch an action through Sigil&apos;s runtime security gateway</p>
+            <h3 className="text-lg font-serif font-bold text-ink">Interactive gateway simulator</h3>
+            <p className="text-xs text-inkMuted font-sans">Dispatch arbitrary tool calls through the live Sigil mediation proxy</p>
           </div>
         </div>
 
         {/* Quick Presets */}
-        <div className="mt-3 pt-3 border-t border-slate-800">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-            Quick Scenario Presets:
+        <div className="pt-1">
+          <span className="text-[11px] font-sans font-bold text-inkMuted block mb-2">
+            Scenario presets:
           </span>
-          <div className="flex flex-wrap gap-2 text-xs">
+          <div className="flex flex-wrap gap-2 text-xs font-sans">
             <button
               type="button"
               onClick={() => handlePreset("normal_research")}
-              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 font-medium border border-emerald-900/60"
+              className="px-3.5 py-1 rounded-full border border-ink/20 bg-canvas text-ink hover:bg-allow hover:text-white hover:border-ink transition-all text-xs font-medium"
             >
-              Normal Research Read (Allow)
+              Compliant read (Allow)
             </button>
             <button
               type="button"
               onClick={() => handlePreset("scenario_a_payroll")}
-              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-rose-300 font-medium border border-rose-900/60"
+              className="px-3.5 py-1 rounded-full border border-pinkPrimary/40 bg-canvas text-pinkPrimary hover:bg-pinkPrimary hover:text-white transition-all text-xs font-semibold"
             >
-              Scenario A: Out-of-Role Payroll (Block)
+              Payroll access (Block)
             </button>
             <button
               type="button"
               onClick={() => handlePreset("scenario_b_injection")}
-              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-medium border border-amber-900/60"
+              className="px-3.5 py-1 rounded-full border border-fuchsia/40 bg-canvas text-fuchsia hover:bg-fuchsia hover:text-white transition-all text-xs font-semibold"
             >
-              Scenario B: Untrusted Injection Exfil (Block)
+              Prompt injection exfil (Block)
             </button>
             <button
               type="button"
               onClick={() => handlePreset("scenario_hold_refund")}
-              className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 font-medium border border-indigo-900/60"
+              className="px-3.5 py-1 rounded-full border border-ink/20 bg-canvas text-ink hover:bg-hold hover:border-ink transition-all text-xs font-medium"
             >
-              Hold-for-Approval: $220 Refund (Hold)
+              \$220 refund (Hold for review)
             </button>
           </div>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3.5 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit} className="mt-5 space-y-3.5 text-xs font-sans">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-slate-400 font-medium mb-1">Agent Identity</label>
+              <label className="block text-inkMuted font-semibold text-[11px] mb-1">Agent identity</label>
               <select
                 value={agentId}
                 onChange={(e) => setAgentId(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-canvas border border-ink/30 rounded-2xl p-2.5 text-ink focus:outline-none focus:border-pinkPrimary focus:bg-paper font-sans text-xs"
               >
                 <option value="agent_research_01">Research Agent (agent_research_01)</option>
                 <option value="agent_finance_01">Finance Agent (agent_finance_01)</option>
@@ -177,127 +181,121 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
             </div>
 
             <div>
-              <label className="block text-slate-400 font-medium mb-1">Tool Name</label>
+              <label className="block text-inkMuted font-semibold text-[11px] mb-1">Requested tool name</label>
               <input
                 type="text"
                 value={toolName}
                 onChange={(e) => setToolName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-canvas border border-ink/30 rounded-2xl p-2.5 text-ink focus:outline-none focus:border-pinkPrimary focus:bg-paper font-sans text-xs"
                 required
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-slate-400 font-medium mb-1">Operation Type</label>
+              <label className="block text-inkMuted font-semibold text-[11px] mb-1">Operation type</label>
               <input
                 type="text"
                 value={operationType}
                 onChange={(e) => setOperationType(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-canvas border border-ink/30 rounded-2xl p-2.5 text-ink focus:outline-none focus:border-pinkPrimary focus:bg-paper font-sans text-xs"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-slate-400 font-medium mb-1">Data Volume</label>
+              <label className="block text-inkMuted font-semibold text-[11px] mb-1">Data volume (items)</label>
               <input
                 type="number"
                 value={dataVolume}
                 onChange={(e) => setDataVolume(parseInt(e.target.value) || 1)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full bg-canvas border border-ink/30 rounded-2xl p-2.5 text-ink focus:outline-none focus:border-pinkPrimary focus:bg-paper font-num tabular-nums text-xs"
                 min="1"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-slate-400 font-medium mb-1">Target Resource</label>
+            <label className="block text-inkMuted font-semibold text-[11px] mb-1">Target resource</label>
             <input
               type="text"
               value={targetResource}
               onChange={(e) => setTargetResource(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+              className="w-full bg-canvas border border-ink/30 rounded-2xl p-2.5 text-ink focus:outline-none focus:border-pinkPrimary focus:bg-paper font-sans text-xs"
               required
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 font-medium mb-1">Destination Target (Optional)</label>
+            <label className="block text-inkMuted font-semibold text-[11px] mb-1">Destination target (optional)</label>
             <input
               type="text"
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
-              placeholder="e.g. internal_notes_system or https://pastebin.com/exfil"
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500 font-mono"
+              placeholder="e.g. internal_notes_system or external URL"
+              className="w-full bg-canvas border border-ink/30 rounded-2xl p-2.5 text-ink focus:outline-none focus:border-pinkPrimary focus:bg-paper font-sans text-xs"
             />
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2 pt-1 font-sans">
             <input
               type="checkbox"
               id="injection_toggle"
               checked={hasUntrustedProvenance}
               onChange={(e) => setHasUntrustedProvenance(e.target.checked)}
-              className="rounded bg-slate-950 border-slate-800 text-cyan-500 focus:ring-0"
+              className="rounded text-pinkPrimary focus:ring-pinkPrimary"
             />
-            <label htmlFor="injection_toggle" className="text-slate-300 font-sans cursor-pointer">
-              Simulate Untrusted Upstream Input Provenance (Indirect Prompt Injection Vector)
+            <label htmlFor="injection_toggle" className="text-ink text-xs cursor-pointer">
+              Simulate untrusted upstream document provenance (Indirect Prompt Injection Vector)
             </label>
           </div>
 
-          <div className="pt-3 flex justify-end gap-2">
+          <div className="pt-4 flex justify-end gap-2.5 border-t border-ink/10">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white font-medium"
+              className="px-4 py-2 rounded-full bg-canvas border border-ink/30 text-ink font-medium hover:bg-paper text-xs transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-cyan-600/30 transition disabled:opacity-50"
+              className="px-5 py-2 rounded-full bg-pinkPrimary text-white font-bold flex items-center gap-1.5 shadow-pink hover:bg-fuchsia active:translate-x-[1px] active:translate-y-[1px] transition-all disabled:opacity-50 text-xs"
             >
-              <Send className="w-3.5 h-3.5" />
-              {loading ? "Evaluating..." : "Send to Gateway"}
+              <Send className="w-3.5 h-3.5 stroke-[2]" />
+              {loading ? "Evaluating..." : "Send to gateway proxy"}
             </button>
           </div>
         </form>
 
         {/* Live Execution Result Banner */}
         {result && (
-          <div className="mt-5 p-4 rounded-xl border border-slate-800 bg-slate-950 space-y-3 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <span className="font-sans font-bold text-white flex items-center gap-2">
-                {result.decision === "BLOCK" ? (
-                  <XCircle className="w-4 h-4 text-rose-400" />
-                ) : result.decision === "HOLD_FOR_APPROVAL" ? (
-                  <AlertCircle className="w-4 h-4 text-amber-400" />
-                ) : (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                )}
-                Gateway Response: <span className="font-extrabold text-cyan-300">{result.decision}</span>
+          <div className="mt-5 p-5 bg-canvas/40 border border-ink/20 rounded-2xl space-y-2.5 text-xs font-sans">
+            <div className="flex items-center justify-between border-b border-ink/10 pb-2">
+              <span className="font-sans font-bold text-ink flex items-center gap-2">
+                Gateway evaluation:
+                <DecisionStamp decision={result.decision} size="sm" />
               </span>
-              <span className="text-slate-400 font-normal">
-                Risk Score: <strong className="text-rose-400 font-bold">{result.risk_score}/100</strong>
+              <span className="text-ink font-bold">
+                Risk score: <strong className="font-num text-fuchsia tabular-nums">{result.risk_score} / 100</strong>
               </span>
             </div>
 
-            <p className="text-slate-200 font-sans text-xs leading-relaxed">{result.explanation}</p>
+            <p className="text-ink text-xs leading-relaxed">{result.explanation}</p>
 
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400 pt-1">
-              <div>Execution Status: <strong className="text-white">{result.execution_status}</strong></div>
-              <div>Confidence: <strong className="text-cyan-400">{Math.round(result.confidence * 100)}%</strong></div>
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-inkMuted pt-1.5 border-t border-ink/10">
+              <div>Execution state: <strong className="text-ink">{result.execution_status}</strong></div>
+              <div>Statistical confidence: <strong className="font-num text-ink tabular-nums">{Math.round(result.confidence * 100)}%</strong></div>
             </div>
 
             {result.tool_output && (
-              <div className="p-2.5 rounded bg-slate-900 border border-slate-800">
-                <span className="text-[10px] text-emerald-400 uppercase font-sans font-bold block mb-1">
-                  Protected Tool Execution Output (Outside Agent):
+              <div className="p-3 bg-paper rounded-xl border border-ink/15 mt-2">
+                <span className="text-[10px] text-pinkPrimary font-bold block mb-1">
+                  Tool execution result payload:
                 </span>
-                <pre className="text-slate-300 text-[11px] overflow-x-auto">
+                <pre className="text-ink font-num text-[11px] overflow-x-auto">
                   {JSON.stringify(result.tool_output, null, 2)}
                 </pre>
               </div>
@@ -306,7 +304,7 @@ export default function SimulateModal({ isOpen, onClose, onEventCreated }: Simul
         )}
 
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-rose-950/60 border border-rose-800 text-rose-300 text-xs">
+          <div className="mt-4 p-3.5 bg-fuchsia/10 border border-fuchsia/30 rounded-2xl text-fuchsia text-xs font-semibold">
             {error}
           </div>
         )}

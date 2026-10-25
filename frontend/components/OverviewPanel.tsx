@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
-import { Users, AlertTriangle, ShieldAlert, Clock, ArrowUpRight, CheckCircle2, XCircle, AlertCircle, PlayCircle } from "lucide-react";
+import React, { useRef, useState, useEffect } from "react";
+import { Users, AlertTriangle, ShieldAlert, Clock, ArrowUpRight, PlayCircle, ChevronsUpDown } from "lucide-react";
+import { DecisionStamp } from "./Stamp";
 
 interface OverviewProps {
   summary: {
@@ -20,51 +21,119 @@ export default function OverviewPanel({
   summary,
   recentEvents,
   setActiveTab,
-  onOpenSimulate,
   onRunScenarios,
 }: OverviewProps) {
+  const tableRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [scrollRatio, setScrollRatio] = useState(0);
+
+  const handleTableScroll = () => {
+    if (!tableRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = tableRef.current;
+    const maxScroll = scrollWidth - clientWidth;
+    setScrollRatio(maxScroll > 0 ? scrollLeft / maxScroll : 0);
+  };
+
+  // Prevent page scroll when vertically scrolling inside the table box
+  useEffect(() => {
+    const tableEl = tableRef.current;
+    if (!tableEl) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault(); // Prevents vertical page scroll completely!
+        e.stopPropagation();
+        tableEl.scrollLeft += e.deltaY * 0.95;
+      }
+    };
+
+    tableEl.addEventListener("wheel", handleWheel, { passive: false });
+    return () => tableEl.removeEventListener("wheel", handleWheel);
+  }, []);
+
+  // Also prevent page scroll when wheeling over the vertical controller track
+  useEffect(() => {
+    const trackEl = trackRef.current;
+    const tableEl = tableRef.current;
+    if (!trackEl || !tableEl) return;
+
+    const handleTrackWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        tableEl.scrollLeft += e.deltaY * 0.95;
+      }
+    };
+
+    trackEl.addEventListener("wheel", handleTrackWheel, { passive: false });
+    return () => trackEl.removeEventListener("wheel", handleTrackWheel);
+  }, []);
+
+  const handleVerticalTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!tableRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickY = e.clientY - rect.top;
+    const ratio = Math.max(0, Math.min(1, clickY / rect.height));
+    const maxScroll = tableRef.current.scrollWidth - tableRef.current.clientWidth;
+    tableRef.current.scrollLeft = ratio * maxScroll;
+  };
+
   return (
     <div className="space-y-6">
-      {/* Banner / Strategic Thesis */}
-      <div className="p-5 rounded-xl border border-cyan-900/40 bg-gradient-to-r from-slate-900 via-cyan-950/20 to-slate-900 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <span className="text-xs uppercase font-bold tracking-wider text-cyan-400">Runtime Enforcement Architecture</span>
-              <h1 className="text-2xl font-bold text-white tracking-tight mt-0.5">
-                Context-Aware Identity Drift Detection & Response
-              </h1>
-              <p className="text-sm text-slate-300 max-w-3xl mt-1 leading-relaxed">
-                Autonomous AI agents can perform out-of-role actions even with valid credentials. Sigil acts as an independent
-                security proxy outside the agent—intercepting every tool call, scoring intent against active task scope, and
-                enforcing technical blocks or approval holds before execution.
-              </p>
+      {/* Editorial Hero Callout */}
+      <div
+        className="p-7 bg-paper border-1.5 border-ink/80 rounded-3xl shadow-ink relative overflow-hidden"
+        style={{ borderWidth: "1.5px" }}
+      >
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+          <div className="space-y-3.5 max-w-2xl">
+            <div className="flex items-center space-x-3 flex-wrap gap-y-1">
+              <span className="font-sans text-[11px] font-bold px-3 py-1 rounded-full bg-pinkPrimary text-white shadow-sm">
+                Runtime mediation
+              </span>
+              <span className="text-base sm:text-lg font-serif italic text-pinkPrimary font-bold">
+                “Agents don’t go rogue. They drift.”
+              </span>
             </div>
-            <div className="flex items-center gap-2 self-start md:self-center">
-              <button
-                onClick={onRunScenarios}
-                className="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition flex items-center gap-1.5"
-              >
-                <PlayCircle className="w-4 h-4" />
-                Run Threat Scenarios
-              </button>
-            </div>
+
+            <h1 className="text-3xl sm:text-4xl font-serif font-bold text-ink tracking-tight leading-tight">
+              Is your agent still itself?
+            </h1>
+
+            <p className="text-xs sm:text-sm text-inkMuted leading-relaxed font-sans">
+              Traditional authentication answers whether an agent holds a valid API key. Sigil answers whether invoking that tool aligns with its assigned identity, active task intent, and authorized data scope. When an agent drifts, tool calls are blocked at the perimeter before execution.
+            </p>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center gap-6 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Gateway Interceptor: <strong>Active (Simulated Tool Boundary)</strong>
+          <div className="flex flex-col sm:flex-row lg:flex-col items-start gap-3.5 shrink-0">
+            <button
+              onClick={onRunScenarios}
+              className="px-5 py-2.5 text-xs font-sans font-bold rounded-full bg-pinkPrimary text-white border-1.5 border-ink shadow-pink hover:bg-fuchsia hover:shadow-pink-lg hover:translate-x-[-1px] hover:translate-y-[-1px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center gap-2"
+              style={{ borderWidth: "1.5px" }}
+            >
+              <PlayCircle className="w-4 h-4 text-white stroke-[2]" />
+              Run 13 test scenarios
+            </button>
+
+            <span className="text-sm sm:text-base font-serif italic text-pinkPrimary font-bold pl-1">
+              “Badge says research. Hands say payroll.”
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-              Scoring Model: <strong>Multi-Signal \(R = 100 \times [0.35P + 0.25T + 0.15B + 0.15I + 0.10C]\)</strong>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-              Audit Trail: <strong>Tamper-Evident Out-of-Agent Store</strong>
-            </span>
+          </div>
+        </div>
+
+        {/* Tactical Indicators */}
+        <div className="mt-6 pt-4 border-t border-ink/10 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-sans">
+          <div className="flex items-center gap-2 text-ink">
+            <span className="w-2.5 h-2.5 rounded-full bg-allow shrink-0" />
+            <span>Interceptor: <strong className="font-semibold">Active tool proxy</strong></span>
+          </div>
+          <div className="flex items-center gap-2 text-ink">
+            <span className="w-2.5 h-2.5 rounded-full bg-pinkPrimary shrink-0" />
+            <span>Multi-signal model: <strong className="font-semibold">5 corroborating signals</strong></span>
+          </div>
+          <div className="flex items-center gap-2 text-ink">
+            <span className="w-2.5 h-2.5 rounded-full bg-ink shrink-0" />
+            <span>Forensic ledger: <strong className="font-semibold">Tamper-proof 9-point store</strong></span>
           </div>
         </div>
       </div>
@@ -74,185 +143,187 @@ export default function OverviewPanel({
         {/* Card 1 */}
         <div
           onClick={() => setActiveTab("agents")}
-          className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 hover:border-cyan-500/40 hover:bg-slate-900/90 transition cursor-pointer group shadow-sm"
+          className="p-5 bg-paper border-1.5 border-ink/70 rounded-3xl shadow-ink-sm hover:shadow-ink hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all cursor-pointer group"
+          style={{ borderWidth: "1.5px" }}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Registered Agents</span>
-            <div className="p-2 rounded-lg bg-slate-800 text-cyan-400 group-hover:scale-105 transition">
-              <Users className="w-4 h-4" />
-            </div>
+          <div className="flex items-center justify-between border-b border-ink/10 pb-2">
+            <span className="text-xs font-sans font-medium text-inkMuted">Registered agents</span>
+            <Users className="w-4 h-4 text-inkMuted stroke-[1.5]" />
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-white tracking-tight">{summary.registered_agents}</span>
-            <span className="text-xs text-cyan-400 flex items-center font-medium">
-              View Inventory <ArrowUpRight className="w-3 h-3 ml-0.5" />
+            <span className="text-4xl font-num font-bold text-ink tracking-tight tabular-nums">{summary.registered_agents}</span>
+            <span className="text-xs font-sans text-pinkPrimary font-bold flex items-center group-hover:underline">
+              Inventory <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" />
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Research, Finance, Support + dynamic</p>
+          <p className="text-[11px] text-inkMuted mt-1 font-sans">Research, finance, support</p>
         </div>
 
         {/* Card 2 */}
         <div
           onClick={() => setActiveTab("alerts")}
-          className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 hover:border-rose-500/40 hover:bg-slate-900/90 transition cursor-pointer group shadow-sm"
+          className="p-5 bg-paper border-1.5 border-pinkPrimary rounded-3xl shadow-pink hover:shadow-pink-lg hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all cursor-pointer group"
+          style={{ borderWidth: "1.5px" }}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Open Drift Alerts</span>
-            <div className="p-2 rounded-lg bg-rose-950/40 text-rose-400 group-hover:scale-105 transition">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
+          <div className="flex items-center justify-between border-b border-ink/10 pb-2">
+            <span className="text-xs font-sans font-bold text-pinkPrimary">Open drift alerts</span>
+            <AlertTriangle className="w-4 h-4 text-pinkPrimary stroke-[2]" />
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-white tracking-tight">{summary.open_alerts}</span>
-            <span className="text-xs text-rose-400 flex items-center font-medium">
-              Investigate <ArrowUpRight className="w-3 h-3 ml-0.5" />
+            <span className="text-4xl font-num font-bold text-pinkPrimary tracking-tight tabular-nums">{summary.open_alerts}</span>
+            <span className="text-xs font-sans text-pinkPrimary flex items-center font-bold group-hover:underline">
+              Investigate <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" />
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Evidence-backed out-of-role alerts</p>
+          <p className="text-[11px] text-inkMuted mt-1 font-sans">Evidence-backed out-of-role alerts</p>
         </div>
 
         {/* Card 3 */}
         <div
           onClick={() => setActiveTab("activity")}
-          className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 hover:border-amber-500/40 hover:bg-slate-900/90 transition cursor-pointer group shadow-sm"
+          className="p-5 bg-paper border-1.5 border-ink/70 rounded-3xl shadow-ink-sm hover:shadow-ink hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all cursor-pointer group"
+          style={{ borderWidth: "1.5px" }}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Blocked Actions</span>
-            <div className="p-2 rounded-lg bg-amber-950/40 text-amber-400 group-hover:scale-105 transition">
-              <ShieldAlert className="w-4 h-4" />
-            </div>
+          <div className="flex items-center justify-between border-b border-ink/10 pb-2">
+            <span className="text-xs font-sans font-medium text-inkMuted">Blocked actions</span>
+            <ShieldAlert className="w-4 h-4 text-fuchsia stroke-[1.5]" />
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-white tracking-tight">{summary.blocked_actions}</span>
-            <span className="text-xs text-amber-400 flex items-center font-medium">
-              View Stream <ArrowUpRight className="w-3 h-3 ml-0.5" />
+            <span className="text-4xl font-num font-bold text-fuchsia tracking-tight tabular-nums">{summary.blocked_actions}</span>
+            <span className="text-xs font-sans text-ink font-bold flex items-center group-hover:underline">
+              Live stream <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" />
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Pre-execution technical gateway stops</p>
+          <p className="text-[11px] text-inkMuted mt-1 font-sans">Pre-execution gateway stops</p>
         </div>
 
         {/* Card 4 */}
         <div
           onClick={() => setActiveTab("enforcement")}
-          className="p-5 rounded-xl border border-slate-800 bg-slate-900/60 hover:border-indigo-500/40 hover:bg-slate-900/90 transition cursor-pointer group shadow-sm"
+          className="p-5 bg-paper border-1.5 border-ink/70 rounded-3xl shadow-ink-sm hover:shadow-ink hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all cursor-pointer group"
+          style={{ borderWidth: "1.5px" }}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Pending Reviews</span>
-            <div className="p-2 rounded-lg bg-indigo-950/40 text-indigo-400 group-hover:scale-105 transition">
-              <Clock className="w-4 h-4" />
-            </div>
+          <div className="flex items-center justify-between border-b border-ink/10 pb-2">
+            <span className="text-xs font-sans font-medium text-inkMuted">Pending holds</span>
+            <Clock className="w-4 h-4 text-inkMuted stroke-[1.5]" />
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-extrabold text-white tracking-tight">{summary.pending_reviews}</span>
-            <span className="text-xs text-indigo-400 flex items-center font-medium">
-              Review Queue <ArrowUpRight className="w-3 h-3 ml-0.5" />
+            <span className="text-4xl font-num font-bold text-ink tracking-tight tabular-nums">{summary.pending_reviews}</span>
+            <span className="text-xs font-sans text-ink font-bold flex items-center group-hover:underline">
+              Review queue <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" />
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Held until human approval verified</p>
+          <p className="text-[11px] text-inkMuted mt-1 font-sans">Queued for human verification</p>
         </div>
       </div>
 
-      {/* Recent Security Events Table */}
-      <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/40">
-        <div className="flex items-center justify-between mb-4">
+      {/* Recent Telemetry Interceptions Card with Vertical-to-Horizontal Scroll Logic */}
+      <div className="bg-paper border-1.5 border-ink/80 rounded-3xl shadow-ink p-6" style={{ borderWidth: "1.5px" }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-ink/15 pb-3 mb-4">
           <div>
-            <h2 className="text-base font-bold text-white">Recent Security Interceptions</h2>
-            <p className="text-xs text-slate-400">Live activity observed and enforced at the tool boundary</p>
+            <h2 className="text-base font-serif font-bold text-ink">Recent tool interceptions</h2>
+            <p className="text-xs text-inkMuted font-sans">
+              Real-time activity observed and mediated by the Sigil proxy (scroll inside to slide columns; page will not scroll)
+            </p>
           </div>
           <button
             onClick={() => setActiveTab("activity")}
-            className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center"
+            className="text-xs font-sans text-pinkPrimary font-bold hover:underline flex items-center self-start sm:self-center"
           >
-            All Live Events <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
+            View full stream <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
           </button>
         </div>
 
         {recentEvents.length === 0 ? (
-          <div className="text-center py-10 text-slate-500 text-sm">
-            No events recorded yet. Click &quot;Run Threat Scenarios&quot; or use the &quot;Gateway Simulator&quot; to begin.
+          <div className="text-center py-10 text-inkMuted text-xs font-sans">
+            No events recorded yet. Click &quot;Run 13 test scenarios&quot; or launch the &quot;Gateway simulator&quot; to inspect runtime enforcement.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800 bg-slate-900/50">
-                <tr>
-                  <th className="py-2.5 px-3 font-semibold">Timestamp</th>
-                  <th className="py-2.5 px-3 font-semibold">Agent / Role</th>
-                  <th className="py-2.5 px-3 font-semibold">Attempted Tool & Operation</th>
-                  <th className="py-2.5 px-3 font-semibold">Target Resource</th>
-                  <th className="py-2.5 px-3 font-semibold">Risk Score</th>
-                  <th className="py-2.5 px-3 font-semibold">Gateway Decision</th>
-                  <th className="py-2.5 px-3 font-semibold">Execution Outcome</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60 font-mono">
-                {recentEvents.map((evt) => {
-                  const isBlock = evt.decision === "BLOCK";
-                  const isHold = evt.decision === "HOLD_FOR_APPROVAL";
-                  const isAllow = evt.decision === "ALLOW";
-
-                  return (
-                    <tr key={evt.event_id} className="hover:bg-slate-800/30 transition">
-                      <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">
+          <div className="flex items-stretch gap-3">
+            {/* Horizontal Table Container (native horizontal scrollbar hidden; mouse wheel scrolls it horizontally without scrolling the page) */}
+            <div
+              ref={tableRef}
+              onScroll={handleTableScroll}
+              className="flex-1 overflow-x-auto scrollbar-none select-text"
+            >
+              <table className="w-full text-left text-xs border-collapse font-sans min-w-[850px]">
+                <thead className="text-[11px] font-sans font-bold text-inkMuted border-b border-ink/15 bg-canvas/40">
+                  <tr>
+                    <th className="py-2.5 px-3">Time</th>
+                    <th className="py-2.5 px-3">Agent</th>
+                    <th className="py-2.5 px-3">Tool &amp; operation</th>
+                    <th className="py-2.5 px-3">Target resource</th>
+                    <th className="py-2.5 px-3">Risk score</th>
+                    <th className="py-2.5 px-3">Decision</th>
+                    <th className="py-2.5 px-3">Execution outcome</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ink/10 text-ink">
+                  {recentEvents.map((evt) => (
+                    <tr key={evt.event_id} className="hover:bg-canvas/30 transition-colors">
+                      <td className="py-3 px-3 text-inkMuted font-num text-[11px] tabular-nums whitespace-nowrap">
                         {evt.timestamp ? new Date(evt.timestamp).toLocaleTimeString() : "--:--:--"}
                       </td>
-                      <td className="py-2.5 px-3 whitespace-nowrap font-sans">
-                        <span className="font-semibold text-white">{evt.agent_name}</span>
-                        <span className="text-[11px] text-slate-400 block">{evt.role}</span>
+                      <td className="py-3 px-3 whitespace-nowrap font-sans">
+                        <span className="font-semibold text-ink block">{evt.agent_name}</span>
+                        <span className="text-[11px] text-inkMuted block">{evt.role}</span>
                       </td>
-                      <td className="py-2.5 px-3 whitespace-nowrap">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[11px]">
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <span className="font-sans text-[11px] font-semibold bg-canvas px-2.5 py-0.5 rounded-full border border-ink/20">
                           {evt.tool_name}
                         </span>
-                        <span className="text-slate-500 text-[11px] ml-1.5 font-sans">({evt.operation_type})</span>
+                        <span className="text-inkMuted text-[11px] ml-1.5 font-sans">({evt.operation_type})</span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-300 max-w-xs truncate" title={evt.target_resource}>
+                      <td className="py-3 px-3 text-ink max-w-xs truncate font-sans text-[11px]" title={evt.target_resource}>
                         {evt.target_resource}
                       </td>
-                      <td className="py-2.5 px-3 whitespace-nowrap">
-                        <span
-                          className={`font-bold ${
-                            evt.risk_score >= 70
-                              ? "text-rose-400"
-                              : evt.risk_score >= 40
-                              ? "text-amber-400"
-                              : "text-emerald-400"
-                          }`}
-                        >
+                      <td className="py-3 px-3 whitespace-nowrap font-num font-bold tabular-nums">
+                        <span className={evt.risk_score >= 70 ? "text-fuchsia font-bold" : "text-ink"}>
                           {evt.risk_score} / 100
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 whitespace-nowrap font-sans">
-                        {isBlock && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-950/60 text-rose-400 border border-rose-800/50">
-                            <XCircle className="w-3 h-3 mr-1" /> BLOCKED
-                          </span>
-                        )}
-                        {isHold && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/60 text-amber-400 border border-amber-800/50">
-                            <AlertCircle className="w-3 h-3 mr-1" /> HELD (REVIEW)
-                          </span>
-                        )}
-                        {isAllow && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">
-                            <CheckCircle2 className="w-3 h-3 mr-1" /> ALLOWED
-                          </span>
-                        )}
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <DecisionStamp decision={evt.decision} size="sm" />
                       </td>
-                      <td className="py-2.5 px-3 whitespace-nowrap font-sans text-xs">
+                      <td className="py-3 px-3 whitespace-nowrap text-xs font-sans">
                         {evt.result === "allowed" || evt.result === "succeeded" ? (
-                          <span className="text-emerald-400 font-medium">Tool Executed</span>
+                          <span className="text-allow font-semibold">Tool executed</span>
                         ) : evt.result === "pending_approval" ? (
-                          <span className="text-amber-400 font-medium">Awaiting Human Signoff</span>
+                          <span className="text-ink font-medium bg-hold/30 px-2 py-0.5 rounded-full border border-ink/30">Awaiting operator signoff</span>
                         ) : (
-                          <span className="text-rose-400 font-medium">Pre-execution Suppressed</span>
+                          <span className="text-fuchsia font-semibold">Pre-execution suppressed</span>
                         )}
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Dedicated Vertical Scroll Controller Track Outside the Box */}
+            <div ref={trackRef} className="flex flex-col items-center justify-between py-1 px-0.5 shrink-0 select-none">
+              <div className="text-[9px] font-sans font-bold text-pinkPrimary tracking-wider uppercase writing-vertical flex items-center gap-1 mb-1">
+                <ChevronsUpDown className="w-3 h-3 text-pinkPrimary" />
+              </div>
+
+              <div
+                onClick={handleVerticalTrackClick}
+                className="w-2.5 flex-1 bg-canvas border border-ink/20 rounded-full relative cursor-pointer hover:bg-canvasSubtle transition-colors shadow-inner"
+                title="Scroll vertically or click to slide table horizontally"
+              >
+                <div
+                  className="w-full bg-pinkPrimary rounded-full absolute transition-all duration-75 shadow-sm"
+                  style={{
+                    height: "28%",
+                    top: `${Math.min(72, scrollRatio * 72)}%`,
+                  }}
+                />
+              </div>
+
+              <span className="text-[9px] text-inkMuted font-sans font-semibold mt-1">
+                {Math.round(scrollRatio * 100)}%
+              </span>
+            </div>
           </div>
         )}
       </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { GitFork, ShieldAlert, CheckCircle, Clock, ChevronDown, ChevronRight, User, Terminal, HelpCircle } from "lucide-react";
+import { GitFork, ChevronDown, ChevronRight, HelpCircle } from "lucide-react";
+import { DecisionStamp } from "./Stamp";
 
 interface IncidentTimelineProps {
   timeline: any[];
@@ -11,150 +12,137 @@ export default function IncidentTimeline({ timeline }: IncidentTimelineProps) {
   const [expandedAuditId, setExpandedAuditId] = useState<string | null>(null);
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-ink/15 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <GitFork className="w-5 h-5 text-indigo-400" />
-            Screen 4: Incident Timeline & Forensic Audit Store
+          <h2 className="text-2xl font-serif font-bold text-ink flex items-center gap-2">
+            <GitFork className="w-5 h-5 text-pinkPrimary stroke-[2]" />
+            Forensic audit ledger (9-point reconstructor)
           </h2>
-          <p className="text-xs text-slate-400">
-            Reconstruct incidents without trusting the agent&apos;s own explanation. Every entry answers the 9 forensic audit questions.
+          <p className="text-xs text-inkMuted font-sans mt-0.5">
+            Tamper-proof audit store answering the 9 forensic questions without trusting the agent&apos;s self-reported narrative
           </p>
         </div>
-        <div className="text-xs text-slate-400 font-mono">
-          Audit Records: <strong className="text-indigo-400">{timeline.length}</strong>
+        <div className="text-xs font-sans text-ink">
+          Recorded audits: <strong className="font-num font-bold tabular-nums text-pinkPrimary">{timeline.length} entries</strong>
         </div>
       </div>
 
       <div className="space-y-4">
         {timeline.length === 0 ? (
-          <div className="text-center py-12 rounded-xl border border-slate-800 bg-slate-900/40 text-slate-500 text-sm">
-            No audit records stored yet. Run threat scenarios to populate the forensic audit trail.
+          <div className="text-center py-12 bg-paper border-1.5 border-ink/40 rounded-3xl shadow-sm text-inkMuted text-xs font-sans">
+            No audit records stored yet. Run test scenarios or gateway simulations to populate the forensic trail.
           </div>
         ) : (
           timeline.map((audit) => {
             const isExpanded = expandedAuditId === audit.audit_id;
-            const isBlock = audit.decision === "BLOCK";
-            const isHold = audit.decision === "HOLD_FOR_APPROVAL";
 
             return (
               <div
                 key={audit.audit_id}
-                className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 hover:border-slate-700 transition"
+                className="bg-paper border-1.5 border-ink/80 rounded-3xl shadow-ink-sm hover:shadow-ink transition-all overflow-hidden"
+                style={{ borderWidth: "1.5px" }}
               >
                 <div
                   onClick={() => setExpandedAuditId(isExpanded ? null : audit.audit_id)}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer"
+                  className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="mt-1 text-slate-500">
-                      {isExpanded ? <ChevronDown className="w-4 h-4 text-cyan-400" /> : <ChevronRight className="w-4 h-4" />}
+                    <div className="mt-0.5 text-pinkPrimary">
+                      {isExpanded ? <ChevronDown className="w-4 h-4 stroke-[2]" /> : <ChevronRight className="w-4 h-4 stroke-[2]" />}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-cyan-400">{audit.audit_id}</span>
-                        <span className="text-xs text-slate-500">•</span>
-                        <span className="text-xs text-slate-400 font-mono">
-                          {audit.timestamp ? new Date(audit.timestamp).toLocaleString() : ""}
+                      <div className="flex items-center gap-2 flex-wrap font-sans text-xs">
+                        <span className="font-num font-bold text-ink">{audit.audit_id}</span>
+                        <span className="text-ink/30">•</span>
+                        <span className="text-inkMuted font-num tabular-nums">
+                          {audit.timestamp ? new Date(audit.timestamp).toLocaleTimeString() : ""}
                         </span>
                         {audit.parent_agent_id && (
-                          <span className="px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 text-[10px] font-mono border border-indigo-800">
+                          <span className="px-2.5 py-0.5 rounded-full border border-ink/20 bg-hold/30 text-ink text-[11px] font-semibold">
                             Delegated by: {audit.parent_agent_id}
                           </span>
                         )}
                       </div>
-                      <h4 className="text-sm font-bold text-white mt-1">
-                        Agent <span className="text-cyan-300 font-mono">{audit.agent_id}</span>: {audit.attempted_action}
+                      <h4 className="text-base font-serif font-bold text-ink mt-1.5">
+                        Agent <span className="text-pinkPrimary font-sans font-bold">{audit.agent_id}</span>: {audit.attempted_action}
                       </h4>
-                      <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{audit.explanation}</p>
+                      <p className="text-xs text-inkMuted font-sans mt-0.5 line-clamp-1">{audit.explanation}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 self-end sm:self-center font-sans">
-                    {isBlock ? (
-                      <span className="px-2.5 py-1 rounded text-xs font-bold bg-rose-950/80 text-rose-300 border border-rose-800/60">
-                        GATEWAY BLOCKED
-                      </span>
-                    ) : isHold ? (
-                      <span className="px-2.5 py-1 rounded text-xs font-bold bg-amber-950/80 text-amber-300 border border-amber-800/60">
-                        APPROVAL HELD
-                      </span>
-                    ) : (
-                      <span className="px-2.5 py-1 rounded text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800/60">
-                        ALLOWED
-                      </span>
-                    )}
+                  <div className="shrink-0 self-start sm:self-center">
+                    <DecisionStamp decision={audit.decision} size="sm" />
                   </div>
                 </div>
 
                 {/* 9 Forensic Questions Drawer */}
                 {isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-slate-800/80 space-y-3 font-sans text-xs">
-                    <div className="flex items-center gap-1.5 text-cyan-400 font-semibold uppercase text-[11px] tracking-wider">
-                      <HelpCircle className="w-3.5 h-3.5" />
-                      Module 7: Nine-Point Forensic Reconstruction
+                  <div className="p-6 bg-canvas/40 border-t border-ink/15 space-y-4 font-sans text-xs">
+                    <div className="flex items-center gap-2 text-pinkPrimary font-sans font-bold text-xs">
+                      <HelpCircle className="w-4 h-4 stroke-[2]" />
+                      <span>Nine-point forensic audit reconstruction</span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-300 bg-slate-950/80 p-3.5 rounded-lg border border-slate-800 font-mono text-[11px]">
-                      <div>
-                        <span className="text-slate-500 font-sans block">1. Which agent initiated?</span>
-                        <strong className="text-white">{audit.agent_id}</strong>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-paper p-5 rounded-2xl border border-ink/15 shadow-sm text-xs text-ink font-sans">
+                      <div className="border-b border-ink/10 pb-2.5">
+                        <span className="text-inkMuted block text-[11px] font-semibold mb-0.5">1. Which agent initiated?</span>
+                        <strong className="text-ink text-xs">{audit.agent_id}</strong>
                       </div>
 
-                      <div>
-                        <span className="text-slate-500 font-sans block">2. Who initiated the task / parent?</span>
-                        <strong className="text-white">
-                          User: {audit.initiating_user} {audit.parent_agent_id ? `| Parent: ${audit.parent_agent_id}` : ""}
+                      <div className="border-b border-ink/10 pb-2.5">
+                        <span className="text-inkMuted block text-[11px] font-semibold mb-0.5">2. Who initiated the task / parent?</span>
+                        <strong className="text-ink text-xs">
+                          {audit.initiating_user} {audit.parent_agent_id ? `(Delegated via ${audit.parent_agent_id})` : ""}
                         </strong>
                       </div>
 
-                      <div>
-                        <span className="text-slate-500 font-sans block">3. What task was active?</span>
-                        <strong className="text-cyan-300">{audit.task_id || "Unbound task"}</strong>
-                        <span className="text-slate-400 block text-[10px] mt-0.5 truncate">
+                      <div className="border-b border-ink/10 pb-2.5">
+                        <span className="text-inkMuted block text-[11px] font-semibold mb-0.5">3. What task was active?</span>
+                        <strong className="text-ink">{audit.task_id || "Unbound task context"}</strong>
+                        <span className="text-inkMuted block text-[11px] truncate mt-0.5 font-num">
                           Scope: {JSON.stringify(audit.task_scope)}
                         </span>
                       </div>
 
-                      <div>
-                        <span className="text-slate-500 font-sans block">4. What did the agent attempt to do?</span>
-                        <strong className="text-amber-300">{audit.attempted_action}</strong>
+                      <div className="border-b border-ink/10 pb-2.5">
+                        <span className="text-inkMuted block text-[11px] font-semibold mb-0.5">4. What did the agent attempt to do?</span>
+                        <strong className="text-ink">{audit.attempted_action}</strong>
                       </div>
 
-                      <div className="col-span-1 md:col-span-2">
-                        <span className="text-slate-500 font-sans block">5. Which policy & evidence evaluated?</span>
-                        <span className="text-slate-400 block text-[10px]">Policy Version: {audit.policy_version}</span>
-                        <ul className="space-y-0.5 mt-1">
+                      <div className="col-span-1 md:col-span-2 border-b border-ink/10 pb-2.5">
+                        <span className="text-inkMuted block text-[11px] font-semibold mb-0.5">5. Which policy &amp; rules were evaluated?</span>
+                        <span className="text-inkMuted block text-[11px] font-num">Policy version: v{audit.policy_version}</span>
+                        <ul className="space-y-1 mt-1 font-sans">
                           {(audit.evaluated_rules || []).map((r: string, idx: number) => (
-                            <li key={idx} className="text-slate-300 flex items-start gap-1">
-                              <span className="text-rose-400">•</span> {r}
+                            <li key={idx} className="text-ink/90 flex items-start gap-2">
+                              <span className="text-pinkPrimary font-bold">»</span> {r}
                             </li>
                           ))}
                         </ul>
                       </div>
 
-                      <div className="col-span-1 md:col-span-2">
-                        <span className="text-slate-500 font-sans block">6. Why was action allowed/challenged/blocked?</span>
-                        <span className="text-slate-200 font-sans">{audit.explanation}</span>
+                      <div className="col-span-1 md:col-span-2 border-b border-ink/10 pb-2.5">
+                        <span className="text-inkMuted block text-[11px] font-semibold mb-0.5">6. Why was action allowed, challenged, or blocked?</span>
+                        <span className="text-ink font-sans text-xs leading-relaxed">{audit.explanation}</span>
                       </div>
 
                       <div>
-                        <span className="text-slate-500 font-sans block">7. What actually happened at the tool?</span>
-                        <strong className={isBlock ? "text-rose-400" : isHold ? "text-amber-400" : "text-emerald-400"}>
+                        <span className="text-inkMuted block text-[11px] font-semibold mb-0.5">7. What actually happened at the tool?</span>
+                        <strong className="text-ink text-xs">
                           {audit.tool_execution_outcome}
                         </strong>
                       </div>
 
                       <div>
-                        <span className="text-slate-500 font-sans block">8. Which containment action was taken?</span>
-                        <strong className="text-slate-200">{audit.containment_action}</strong>
+                        <span className="text-inkMuted block text-[11px] font-semibold mb-0.5">8. Which containment was enforced?</span>
+                        <strong className="text-ink text-xs">{audit.containment_action}</strong>
                       </div>
 
-                      <div className="col-span-1 md:col-span-2">
-                        <span className="text-slate-500 font-sans block">9. Who approved exception or resolved incident?</span>
-                        <strong className="text-slate-300">
-                          {audit.resolved_by ? `${audit.resolved_by} (${audit.resolution_notes || "Verified"})` : "None required (Pre-execution block or safe)"}
+                      <div className="col-span-1 md:col-span-2 pt-1">
+                        <span className="text-inkMuted block text-[11px] font-semibold mb-0.5">9. Who approved exception or resolved incident?</span>
+                        <strong className="text-ink text-xs">
+                          {audit.resolved_by ? `${audit.resolved_by} (${audit.resolution_notes || "Verified"})` : "None required (Pre-execution block or safe execution)"}
                         </strong>
                       </div>
                     </div>

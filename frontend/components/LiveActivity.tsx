@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Activity, Search, Filter, ShieldCheck, ShieldAlert, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { Activity, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { DecisionStamp } from "./Stamp";
 
 interface LiveActivityProps {
   events: any[];
@@ -24,157 +25,152 @@ export default function LiveActivity({ events }: LiveActivityProps) {
   });
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-ink/15 pb-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Activity className="w-5 h-5 text-cyan-400" />
-            Screen 2: Runtime Tool Gateway Activity Stream
+          <h2 className="text-2xl font-serif font-bold text-ink flex items-center gap-2">
+            <Activity className="w-5 h-5 text-pinkPrimary stroke-[2]" />
+            Runtime activity stream
           </h2>
-          <p className="text-xs text-slate-400">
-            Real-time searchable telemetry stream captured at the tool execution boundary.
+          <p className="text-xs text-inkMuted font-sans mt-0.5">
+            Real-time ledger of tool invocations captured and evaluated at the gateway boundary
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-slate-400">Showing {filtered.length} of {events.length} events</span>
+        <div className="flex items-center gap-2 text-xs font-sans text-ink">
+          <span>Showing <strong className="font-num font-bold tabular-nums text-pinkPrimary">{filtered.length}</strong> of <strong className="font-num font-bold tabular-nums">{events.length}</strong> telemetry records</span>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row gap-3 items-center justify-between">
+      {/* Filter and Search Bar: Rounded pills */}
+      <div className="p-4 bg-paper border-1.5 border-ink/80 rounded-3xl shadow-ink-sm flex flex-col sm:flex-row gap-3 items-center justify-between" style={{ borderWidth: "1.5px" }}>
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 text-inkMuted absolute left-3.5 top-3 stroke-[2]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by agent, tool, resource..."
-            className="w-full bg-slate-950 border border-slate-800 rounded-md pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+            placeholder="Search agent, tool, resource..."
+            className="w-full bg-canvas border border-ink/30 rounded-full pl-10 pr-4 py-2 text-xs text-ink placeholder-inkMuted focus:outline-none focus:border-pinkPrimary focus:bg-paper font-sans"
           />
         </div>
 
-        <div className="flex items-center gap-1.5 w-full sm:w-auto">
-          {["ALL", "BLOCK", "HOLD_FOR_APPROVAL", "ALLOW"].map((dec) => (
+        <div className="flex items-center gap-2 w-full sm:w-auto font-sans text-xs flex-wrap">
+          {[
+            { id: "ALL", label: "All" },
+            { id: "ALLOW", label: "Allowed" },
+            { id: "HOLD_FOR_APPROVAL", label: "Held for review" },
+            { id: "BLOCK", label: "Blocked" },
+          ].map((item) => (
             <button
-              key={dec}
-              onClick={() => setFilterDecision(dec)}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition ${
-                filterDecision === dec
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/50"
-                  : "bg-slate-800 text-slate-400 hover:text-white"
+              key={item.id}
+              onClick={() => setFilterDecision(item.id)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                filterDecision === item.id
+                  ? "bg-pinkPrimary text-white font-bold border-pinkPrimary shadow-pink"
+                  : "bg-paper text-ink border-ink/20 hover:border-ink/50"
               }`}
             >
-              {dec === "ALL" ? "All" : dec === "HOLD_FOR_APPROVAL" ? "Held" : dec}
+              {item.label}
             </button>
           ))}
         </div>
       </div>
 
       {/* Events Table */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/40 overflow-hidden">
+      <div className="bg-paper border-1.5 border-ink/80 rounded-3xl shadow-ink overflow-hidden" style={{ borderWidth: "1.5px" }}>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-mono">
-            <thead className="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800 bg-slate-900/70 font-sans">
+          <table className="w-full text-left text-xs font-sans border-collapse">
+            <thead className="text-[11px] font-sans font-bold text-inkMuted bg-canvas/40 border-b border-ink/15">
               <tr>
-                <th className="py-2.5 px-3"></th>
-                <th className="py-2.5 px-3 font-semibold">Event ID</th>
-                <th className="py-2.5 px-3 font-semibold">Timestamp</th>
-                <th className="py-2.5 px-3 font-semibold">Agent ID</th>
-                <th className="py-2.5 px-3 font-semibold">Tool & Op</th>
-                <th className="py-2.5 px-3 font-semibold">Target Resource</th>
-                <th className="py-2.5 px-3 font-semibold">Volume</th>
-                <th className="py-2.5 px-3 font-semibold">Decision</th>
-                <th className="py-2.5 px-3 font-semibold">Outcome</th>
+                <th className="py-3 px-3 w-8"></th>
+                <th className="py-3 px-3">Event ID</th>
+                <th className="py-3 px-3">Time</th>
+                <th className="py-3 px-3">Agent</th>
+                <th className="py-3 px-3">Tool &amp; operation</th>
+                <th className="py-3 px-3">Target resource</th>
+                <th className="py-3 px-3">Volume</th>
+                <th className="py-3 px-3">Decision</th>
+                <th className="py-3 px-3">Outcome</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-ink/10 text-ink">
               {filtered.map((e) => {
                 const isExpanded = expandedEventId === e.event_id;
-                const isBlock = e.authorization_decision === "BLOCK";
-                const isHold = e.authorization_decision === "HOLD_FOR_APPROVAL";
 
                 return (
                   <React.Fragment key={e.event_id}>
                     <tr
                       onClick={() => setExpandedEventId(isExpanded ? null : e.event_id)}
-                      className="hover:bg-slate-800/40 cursor-pointer transition"
+                      className="hover:bg-canvas/40 cursor-pointer transition-colors"
                     >
-                      <td className="py-2.5 px-2 text-slate-500">
-                        {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                      <td className="py-3 px-3 text-inkMuted text-center">
+                        {isExpanded ? <ChevronDown className="w-4 h-4 mx-auto text-pinkPrimary" /> : <ChevronRight className="w-4 h-4 mx-auto" />}
                       </td>
-                      <td className="py-2.5 px-3 text-cyan-400 font-semibold">{e.event_id}</td>
-                      <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">
+                      <td className="py-3 px-3 font-num font-semibold text-ink whitespace-nowrap">{e.event_id}</td>
+                      <td className="py-3 px-3 text-inkMuted font-num tabular-nums whitespace-nowrap">
                         {e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : "--"}
                       </td>
-                      <td className="py-2.5 px-3 text-slate-200">{e.agent_id}</td>
-                      <td className="py-2.5 px-3 text-slate-300">
-                        <span className="font-semibold text-white">{e.tool_name}</span>
-                        <span className="text-slate-500 text-[10px] ml-1 font-sans">({e.operation_type})</span>
+                      <td className="py-3 px-3 whitespace-nowrap font-medium">{e.agent_id}</td>
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <span className="font-semibold bg-canvas px-2.5 py-0.5 rounded-full border border-ink/20">
+                          {e.tool_name}
+                        </span>
+                        <span className="text-inkMuted text-[11px] ml-1.5">({e.operation_type})</span>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-300 max-w-xs truncate" title={e.target_resource}>
+                      <td className="py-3 px-3 text-ink max-w-xs truncate" title={e.target_resource}>
                         {e.target_resource}
                       </td>
-                      <td className="py-2.5 px-3 text-slate-400">{e.data_volume} items</td>
-                      <td className="py-2.5 px-3 font-sans">
-                        {isBlock ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/70 text-rose-300 border border-rose-800/50">
-                            BLOCK
-                          </span>
-                        ) : isHold ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/70 text-amber-300 border border-amber-800/50">
-                            HOLD
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/70 text-emerald-300 border border-emerald-800/50">
-                            ALLOW
-                          </span>
-                        )}
+                      <td className="py-3 px-3 text-inkMuted font-num tabular-nums whitespace-nowrap">{e.data_volume} items</td>
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <DecisionStamp decision={e.authorization_decision} size="sm" />
                       </td>
-                      <td className="py-2.5 px-3 font-sans text-xs">
-                        <span
-                          className={`font-medium ${
-                            e.result === "allowed" || e.result === "succeeded"
-                              ? "text-emerald-400"
-                              : e.result === "pending_approval"
-                              ? "text-amber-400"
-                              : "text-rose-400"
-                          }`}
-                        >
-                          {e.result}
-                        </span>
+                      <td className="py-3 px-3 whitespace-nowrap text-xs">
+                        {e.result === "allowed" || e.result === "succeeded" ? (
+                          <span className="text-allow font-semibold">Tool executed</span>
+                        ) : e.result === "pending_approval" ? (
+                          <span className="text-ink font-medium bg-hold/30 px-2 py-0.5 rounded-full border border-ink/30">Awaiting operator signoff</span>
+                        ) : (
+                          <span className="text-fuchsia font-semibold">Pre-execution suppressed</span>
+                        )}
                       </td>
                     </tr>
 
                     {/* Detailed Accordion Row */}
                     {isExpanded && (
-                      <tr className="bg-slate-950/70">
-                        <td colSpan={9} className="p-4 border-t border-slate-800">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                            <div className="space-y-1">
-                              <span className="text-slate-400 font-sans font-semibold uppercase text-[10px]">Session & User</span>
-                              <div>Initiating User: <strong className="text-slate-200">{e.initiating_user}</strong></div>
-                              <div>Session ID: <span className="text-slate-300">{e.session_id}</span></div>
-                              {e.parent_agent_id && <div>Parent Agent: <span className="text-indigo-400 font-bold">{e.parent_agent_id}</span></div>}
-                              <div>Task ID: <span className="text-slate-300">{e.task_id || "Unassigned"}</span></div>
+                      <tr className="bg-canvas/50">
+                        <td colSpan={9} className="p-5 border-t border-b border-ink/15 text-xs font-sans">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2 bg-paper p-4 rounded-2xl border border-ink/15 shadow-sm">
+                              <span className="text-pinkPrimary font-sans font-bold text-[11px] block border-b border-ink/10 pb-1.5">
+                                Context &amp; authority
+                              </span>
+                              <div>Initiating user: <strong className="text-ink">{e.initiating_user}</strong></div>
+                              <div>Session: <span className="text-inkMuted font-num tabular-nums">{e.session_id}</span></div>
+                              {e.parent_agent_id && <div>Parent agent: <span className="text-pinkPrimary font-bold">{e.parent_agent_id}</span></div>}
+                              <div>Task reference: <span className="text-inkMuted font-num tabular-nums">{e.task_id || "None"}</span></div>
                             </div>
 
-                            <div className="space-y-1">
-                              <span className="text-slate-400 font-sans font-semibold uppercase text-[10px]">Target & Security</span>
-                              <div>Sensitivity: <span className="text-amber-400 font-semibold">{e.resource_sensitivity}</span></div>
-                              <div>Destination: <span className="text-slate-300">{e.destination || "None (internal)"}</span></div>
-                              <div>Policy Version: <span className="text-cyan-400">{e.policy_version}</span></div>
-                              <div>Risk Score: <span className="text-rose-400 font-bold">{e.risk_score}/100</span></div>
+                            <div className="space-y-2 bg-paper p-4 rounded-2xl border border-ink/15 shadow-sm">
+                              <span className="text-pinkPrimary font-sans font-bold text-[11px] block border-b border-ink/10 pb-1.5">
+                                Security &amp; risk score
+                              </span>
+                              <div>Sensitivity: <strong className="text-ink">{e.resource_sensitivity}</strong></div>
+                              <div>Destination: <span className="text-inkMuted">{e.destination || "Internal"}</span></div>
+                              <div>Policy version: <span className="font-num font-bold tabular-nums">v{e.policy_version}</span></div>
+                              <div>Evaluated risk: <span className="font-num font-bold text-fuchsia tabular-nums">{e.risk_score} / 100</span></div>
                             </div>
 
-                            <div className="space-y-1">
-                              <span className="text-slate-400 font-sans font-semibold uppercase text-[10px]">Provenance & Action Params</span>
-                              <div className="bg-slate-900 p-2 rounded border border-slate-800 overflow-x-auto max-h-24">
-                                <span className="text-[10px] text-slate-500 block">Params:</span>
-                                <code>{JSON.stringify(e.action_parameters || {}, null, 1)}</code>
+                            <div className="space-y-2 bg-paper p-4 rounded-2xl border border-ink/15 shadow-sm overflow-hidden">
+                              <span className="text-pinkPrimary font-sans font-bold text-[11px] block border-b border-ink/10 pb-1.5">
+                                Action parameters &amp; provenance
+                              </span>
+                              <div className="max-h-24 overflow-y-auto text-[11px]">
+                                <span className="text-inkMuted text-[10px] block">Parameters:</span>
+                                <div className="font-num text-[11px] bg-canvas p-2 rounded-xl mt-1 text-ink">{JSON.stringify(e.action_parameters || {}, null, 1)}</div>
                                 {e.input_provenance && (
                                   <>
-                                    <span className="text-[10px] text-slate-500 block mt-1">Input Provenance:</span>
-                                    <code className="text-amber-300">{JSON.stringify(e.input_provenance, null, 1)}</code>
+                                    <span className="text-inkMuted text-[10px] block mt-2">Input provenance:</span>
+                                    <div className="font-num text-[11px] bg-canvas p-2 rounded-xl mt-1 text-pinkPrimary">{JSON.stringify(e.input_provenance, null, 1)}</div>
                                   </>
                                 )}
                               </div>

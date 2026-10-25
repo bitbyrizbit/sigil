@@ -33,6 +33,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(false);
   const [isSimulateOpen, setIsSimulateOpen] = useState(false);
+  const [pageScrollProgress, setPageScrollProgress] = useState(0);
 
   // Live state
   const [summaryData, setSummaryData] = useState({
@@ -49,6 +50,19 @@ export default function Home() {
   });
   const [approvals, setApprovals] = useState<any[]>([]);
   const [evaluationData, setEvaluationData] = useState<any | null>(null);
+
+  // Track vertical page scroll and translate it into horizontal progress at the top
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+      setPageScrollProgress(progress);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const loadAllData = async () => {
     try {
@@ -157,86 +171,122 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenSimulate={() => setIsSimulateOpen(true)}
-        onRunScenarios={handleRunScenarios}
-        onResetSeed={handleResetSeed}
-        loading={loading}
-      />
+    <div className="min-h-screen bg-canvas text-ink flex flex-col font-sans selection:bg-pinkPrimary selection:text-white relative">
+      {/* Horizontal Page Scroll Track on the Top: Translates vertical page scrolling into horizontal top indicator */}
+      <div className="fixed top-0 left-0 right-0 h-1.5 bg-ink/10 z-50 pointer-events-none">
+        <div
+          className="h-full bg-pinkPrimary transition-[width] duration-100 ease-out shadow-sm"
+          style={{ width: `${pageScrollProgress}%` }}
+        />
+      </div>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {activeTab === "overview" && (
-          <OverviewPanel
-            summary={summaryData.summary}
-            recentEvents={summaryData.recent_events}
-            setActiveTab={setActiveTab}
-            onOpenSimulate={() => setIsSimulateOpen(true)}
-            onRunScenarios={handleRunScenarios}
-          />
-        )}
+      {/* Padded Container: Prevents any element from sticking to the screen walls */}
+      <div className="w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-14 py-6 md:py-8 flex flex-col flex-1">
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onOpenSimulate={() => setIsSimulateOpen(true)}
+          onRunScenarios={handleRunScenarios}
+          onResetSeed={handleResetSeed}
+          loading={loading}
+        />
 
-        {activeTab === "agents" && (
-          <AgentInventory
-            agents={agents}
-            onUpdateStatus={handleUpdateContainment}
-          />
-        )}
+        <main className="flex-1 w-full py-6">
+          {activeTab === "overview" && (
+            <OverviewPanel
+              summary={summaryData.summary}
+              recentEvents={summaryData.recent_events}
+              setActiveTab={setActiveTab}
+              onOpenSimulate={() => setIsSimulateOpen(true)}
+              onRunScenarios={handleRunScenarios}
+            />
+          )}
 
-        {activeTab === "activity" && (
-          <LiveActivity events={events} />
-        )}
+          {activeTab === "agents" && (
+            <AgentInventory
+              agents={agents}
+              onUpdateStatus={handleUpdateContainment}
+            />
+          )}
 
-        {activeTab === "alerts" && (
-          <DriftAlerts
-            alerts={alerts}
-            onResolveAlert={handleResolveAlert}
-          />
-        )}
+          {activeTab === "activity" && (
+            <LiveActivity events={events} />
+          )}
 
-        {activeTab === "timeline" && (
-          <IncidentTimeline timeline={timeline} />
-        )}
+          {activeTab === "alerts" && (
+            <DriftAlerts
+              alerts={alerts}
+              onResolveAlert={handleResolveAlert}
+            />
+          )}
 
-        {activeTab === "policies" && (
-          <PolicyManagement
-            policiesData={policiesData}
-            onUpdatePolicy={handleUpdatePolicy}
-          />
-        )}
+          {activeTab === "timeline" && (
+            <IncidentTimeline timeline={timeline} />
+          )}
 
-        {activeTab === "enforcement" && (
-          <EnforcementControls
-            agents={agents}
-            approvals={approvals}
-            onUpdateStatus={handleUpdateContainment}
-            onResolveApproval={handleResolveApproval}
-          />
-        )}
+          {activeTab === "policies" && (
+            <PolicyManagement
+              policiesData={policiesData}
+              onUpdatePolicy={handleUpdatePolicy}
+            />
+          )}
 
-        {activeTab === "evaluation" && (
-          <EvaluationPanel
-            evaluationData={evaluationData}
-            onRunBenchmark={handleRunBenchmark}
-            loading={loading}
-          />
-        )}
-      </main>
+          {activeTab === "enforcement" && (
+            <EnforcementControls
+              agents={agents}
+              approvals={approvals}
+              onUpdateStatus={handleUpdateContainment}
+              onResolveApproval={handleResolveApproval}
+            />
+          )}
 
-      <SimulateModal
-        isOpen={isSimulateOpen}
-        onClose={() => setIsSimulateOpen(false)}
-        onEventCreated={loadAllData}
-      />
+          {activeTab === "evaluation" && (
+            <EvaluationPanel
+              evaluationData={evaluationData}
+              onRunBenchmark={handleRunBenchmark}
+              loading={loading}
+            />
+          )}
+        </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/80 py-4 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
-          Sigil • Runtime Identity Drift Detection and Response for Autonomous AI Agents • github.com/bitbyrizbit/sigil
-        </div>
-      </footer>
+        <SimulateModal
+          isOpen={isSimulateOpen}
+          onClose={() => setIsSimulateOpen(false)}
+          onEventCreated={loadAllData}
+        />
+
+        {/* Seamless Blended Footer: Increased font sizes for all elements */}
+        <footer className="pt-16 pb-8 mt-auto w-full">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-5 font-sans">
+            <div className="flex items-center gap-3.5">
+              <div
+                className="group inline-flex items-baseline cursor-pointer select-none"
+                onClick={() => setActiveTab("overview")}
+                title="Sigil home"
+              >
+                <span className="font-serif italic font-bold text-3xl sm:text-4xl text-pinkPrimary lowercase inline-block transform -rotate-6 transition-colors">
+                  sigil
+                  <span className="inline-block font-serif font-bold italic ml-0.5">
+                    <span className="dot-1 inline-block">.</span>
+                    <span className="dot-2 inline-block">.</span>
+                    <span className="dot-3 inline-block">.</span>
+                  </span>
+                </span>
+              </div>
+              <span className="text-ink/30 text-base">•</span>
+              <span className="text-ink text-sm sm:text-base font-semibold">Runtime identity drift proxy</span>
+            </div>
+
+            <div className="italic font-serif text-pinkPrimary text-base sm:text-xl font-bold">
+              “Authenticated isn’t innocent.”
+            </div>
+
+            <div className="text-xs sm:text-sm font-semibold text-inkMuted">
+              Out-of-agent execution boundary
+            </div>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

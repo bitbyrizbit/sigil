@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sigil - Runtime Identity Drift Detection and Response",
-  description: "Context-Aware Identity Drift Detection and Response for Autonomous AI Agents",
+  title: "sigil - runtime identity drift detection for ai agents",
+  description: "Runtime security and governance proxy that verifies agent intent before tool execution.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -12,8 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500/20 selection:text-cyan-300">
+    <html lang="en">
+      <body className="bg-canvas text-ink antialiased font-sans">
         {children}
       </body>
     </html>
